@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en-GB" class="no-js">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="profile" href="https://gmpg.org/xfn/11">
+    <link rel="shortcut icon" type="image/x-icon" href="https://www.kth.se/blogs/pdc/wp-content/themes/kth-blog-theme-2025/favicon.ico">
+    <script src="https://www.kth.se/blogs/pdc/wp-content/themes/kth-blog-theme-2025/assets/js/mobile-menu.js"></script>
+        <title>Scalability: strong and weak scaling &#8211; PDC Blog</title>
+<meta name='robots' content='max-image-preview:large' />
+<link rel='dns-prefetch' href='//v0.wordpress.com' />
+<link rel="alternate" type="application/rss+xml" title="PDC Blog &raquo; Feed" href="https://www.kth.se/blogs/pdc/feed/" />
+<link rel="alternate" type="application/rss+xml" title="PDC Blog &raquo; Comments Feed" href="https://www.kth.se/blogs/pdc/comments/feed/" />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://www.kth.se/blogs/pdc/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.kth.se%2Fblogs%2Fpdc%2F2018%2F11%2Fscalability-strong-and-weak-scaling%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://www.kth.se/blogs/pdc/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.kth.se%2Fblogs%2Fpdc%2F2018%2F11%2Fscalability-strong-and-weak-scaling%2F&#038;format=xml" />
+<link href="https://www.kth.se/blogs/pdc/wp-content/plugins/kth-register-user-on-blog/kth-register-user-on-blog.css" rel="stylesheet" type="text/css" /><style id="wp-img-auto-sizes-contain-inline-css">
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<style id="wp-emoji-styles-inline-css">
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+/*# sourceURL=wp-emoji-styles-inline-css */
+</style>
+<style id="wp-block-library-inline-css">
+:root{--wp-block-synced-color:#7a00df;--wp-block-synced-color--rgb:122,0,223;--wp-bound-block-color:var(--wp-block-synced-color);--wp-editor-canvas-background:#ddd;--wp-admin-theme-color:#007cba;--wp-admin-theme-color--rgb:0,124,186;--wp-admin-theme-color-darker-10:#006ba1;--wp-admin-theme-color-darker-10--rgb:0,107,160.5;--wp-admin-theme-color-darker-20:#005a87;--wp-admin-theme-color-darker-20--rgb:0,90,135;--wp-admin-border-width-focus:2px}@media (min-resolution:192dpi){:root{--wp-admin-border-width-focus:1.5px}}.wp-element-button{cursor:pointer}:root .has-very-light-gray-background-color{background-color:#eee}:root .has-very-dark-gray-background-color{background-color:#313131}:root .has-very-light-gray-color{color:#eee}:root .has-very-dark-gray-color{color:#313131}:root .has-vivid-green-cyan-to-vivid-cyan-blue-gradient-background{background:linear-gradient(135deg,#00d084,#0693e3)}:root .has-purple-crush-gradient-background{background:linear-gradient(135deg,#34e2e4,#4721fb 50%,#ab1dfe)}:root .has-hazy-dawn-gradient-background{background:linear-gradient(135deg,#faaca8,#dad0ec)}:root .has-subdued-olive-gradient-background{background:linear-gradient(135deg,#fafae1,#67a671)}:root .has-atomic-cream-gradient-background{background:linear-gradient(135deg,#fdd79a,#004a59)}:root .has-nightshade-gradient-background{background:linear-gradient(135deg,#330968,#31cdcf)}:root .has-midnight-gradient-background{background:linear-gradient(135deg,#020381,#2874fc)}:root{--wp--preset--font-size--normal:16px;--wp--preset--font-size--huge:42px}.has-regular-font-size{font-size:1em}.has-larger-font-size{font-size:2.625em}.has-normal-font-size{font-size:var(--wp--preset--font-size--normal)}.has-huge-font-size{font-size:var(--wp--preset--font-size--huge)}:root .has-text-align-center{text-align:center}:root .has-text-align-left{text-align:left}:root .has-text-align-right{text-align:right}.has-fit-text{white-space:nowrap!important}#end-resizable-editor-section{display:none}.aligncenter{clear:both}.items-justified-left{justify-content:flex-start}.items-justified-center{justify-content:center}.items-justified-right{justify-content:flex-end}.items-justified-space-between{justify-content:space-between}.screen-reader-text{word-wrap:normal!important;border:0;clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;word-break:normal!important}.screen-reader-text:focus{background-color:#ddd;clip-path:none;color:#444;display:block;font-size:1em;height:auto;left:5px;line-height:normal;padding:15px 23px 14px;text-decoration:none;top:5px;width:auto;z-index:100000}html :where(.has-border-color){border-style:solid}html :where([style^=border-color],[style*=";border-color"],[style*="; border-color"]){border-style:solid}html :where([style^=border-top-color],[style*=";border-top-color"],[style*="; border-top-color"]){border-top-style:solid}html :where([style^=border-right-color],[style*=";border-right-color"],[style*="; border-right-color"]){border-right-style:solid}html :where([style^=border-bottom-color],[style*=";border-bottom-color"],[style*="; border-bottom-color"]){border-bottom-style:solid}html :where([style^=border-left-color],[style*=";border-left-color"],[style*="; border-left-color"]){border-left-style:solid}html :where([style^=border-width],[style*=";border-width"],[style*="; border-width"]){border-style:solid}html :where([style^=border-top-width],[style*=";border-top-width"],[style*="; border-top-width"]){border-top-style:solid}html :where([style^=border-right-width],[style*=";border-right-width"],[style*="; border-right-width"]){border-right-style:solid}html :where([style^=border-bottom-width],[style*=";border-bottom-width"],[style*="; border-bottom-width"]){border-bottom-style:solid}html :where([style^=border-left-width],[style*=";border-left-width"],[style*="; border-left-width"]){border-left-style:solid}html :where(img[class*=wp-image-]){height:auto;max-width:100%}:where(figure){margin:0 0 1em}html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:var(--wp-admin--admin-bar--height,0px)}@media screen and (max-width:600px){html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:0px}}
+
+/*# sourceURL=/wp-includes/css/dist/block-library/common.min.css */
+</style>
+
+<style id="global-styles-inline-css">
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--primary: #004791;--wp--preset--color--primary-hover: #003975;--wp--preset--color--on-primary: #fcfcfc;--wp--preset--color--secondary: #212121;--wp--preset--color--secondary-hover: rgba(33, 33, 33, 0.1);--wp--preset--color--tertiary: #036eb8;--wp--preset--color--text: #212121;--wp--preset--color--text-muted: #646464;--wp--preset--color--background: #fcfcfc;--wp--preset--color--background-alt: #ededed;--wp--preset--color--header: #fcfcfc;--wp--preset--color--on-header: #000061;--wp--preset--color--error: #c7321d;--wp--preset--color--error-hover: #bf2c17;--wp--preset--color--success: #3d784a;--wp--preset--color--success-hover: #366f43;--wp--preset--color--border: #a5a5a5;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--font-family--figtree: Figtree, sans-serif;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}.wp-block-button{--wp--preset--dimension--25: 25%;--wp--preset--dimension--50: 50%;--wp--preset--dimension--75: 75%;--wp--preset--dimension--100: 100%;}:root { --wp--style--global--content-size: 800px;--wp--style--global--wide-size: 1200px; }:where(body) { margin: 0; }.wp-site-blocks > .alignleft { float: left; margin-right: 2em; }.wp-site-blocks > .alignright { float: right; margin-left: 2em; }.wp-site-blocks > .aligncenter { justify-content: center; margin-left: auto; margin-right: auto; }:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}.is-layout-flow > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-flow > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-flow > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-constrained > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-constrained > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)){max-width: var(--wp--style--global--content-size);margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignwide{max-width: var(--wp--style--global--wide-size);}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;font-style: inherit;font-weight: inherit;letter-spacing: inherit;line-height: inherit;padding-top: calc(0.667em + 2px);padding-right: calc(1.333em + 2px);padding-bottom: calc(0.667em + 2px);padding-left: calc(1.333em + 2px);text-decoration: none;text-transform: inherit;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-primary-color{color: var(--wp--preset--color--primary) !important;}.has-primary-hover-color{color: var(--wp--preset--color--primary-hover) !important;}.has-on-primary-color{color: var(--wp--preset--color--on-primary) !important;}.has-secondary-color{color: var(--wp--preset--color--secondary) !important;}.has-secondary-hover-color{color: var(--wp--preset--color--secondary-hover) !important;}.has-tertiary-color{color: var(--wp--preset--color--tertiary) !important;}.has-text-color{color: var(--wp--preset--color--text) !important;}.has-text-muted-color{color: var(--wp--preset--color--text-muted) !important;}.has-background-color{color: var(--wp--preset--color--background) !important;}.has-background-alt-color{color: var(--wp--preset--color--background-alt) !important;}.has-header-color{color: var(--wp--preset--color--header) !important;}.has-on-header-color{color: var(--wp--preset--color--on-header) !important;}.has-error-color{color: var(--wp--preset--color--error) !important;}.has-error-hover-color{color: var(--wp--preset--color--error-hover) !important;}.has-success-color{color: var(--wp--preset--color--success) !important;}.has-success-hover-color{color: var(--wp--preset--color--success-hover) !important;}.has-border-color{color: var(--wp--preset--color--border) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-primary-background-color{background-color: var(--wp--preset--color--primary) !important;}.has-primary-hover-background-color{background-color: var(--wp--preset--color--primary-hover) !important;}.has-on-primary-background-color{background-color: var(--wp--preset--color--on-primary) !important;}.has-secondary-background-color{background-color: var(--wp--preset--color--secondary) !important;}.has-secondary-hover-background-color{background-color: var(--wp--preset--color--secondary-hover) !important;}.has-tertiary-background-color{background-color: var(--wp--preset--color--tertiary) !important;}.has-text-background-color{background-color: var(--wp--preset--color--text) !important;}.has-text-muted-background-color{background-color: var(--wp--preset--color--text-muted) !important;}.has-background-background-color{background-color: var(--wp--preset--color--background) !important;}.has-background-alt-background-color{background-color: var(--wp--preset--color--background-alt) !important;}.has-header-background-color{background-color: var(--wp--preset--color--header) !important;}.has-on-header-background-color{background-color: var(--wp--preset--color--on-header) !important;}.has-error-background-color{background-color: var(--wp--preset--color--error) !important;}.has-error-hover-background-color{background-color: var(--wp--preset--color--error-hover) !important;}.has-success-background-color{background-color: var(--wp--preset--color--success) !important;}.has-success-hover-background-color{background-color: var(--wp--preset--color--success-hover) !important;}.has-border-background-color{background-color: var(--wp--preset--color--border) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-primary-border-color{border-color: var(--wp--preset--color--primary) !important;}.has-primary-hover-border-color{border-color: var(--wp--preset--color--primary-hover) !important;}.has-on-primary-border-color{border-color: var(--wp--preset--color--on-primary) !important;}.has-secondary-border-color{border-color: var(--wp--preset--color--secondary) !important;}.has-secondary-hover-border-color{border-color: var(--wp--preset--color--secondary-hover) !important;}.has-tertiary-border-color{border-color: var(--wp--preset--color--tertiary) !important;}.has-text-border-color{border-color: var(--wp--preset--color--text) !important;}.has-text-muted-border-color{border-color: var(--wp--preset--color--text-muted) !important;}.has-background-border-color{border-color: var(--wp--preset--color--background) !important;}.has-background-alt-border-color{border-color: var(--wp--preset--color--background-alt) !important;}.has-header-border-color{border-color: var(--wp--preset--color--header) !important;}.has-on-header-border-color{border-color: var(--wp--preset--color--on-header) !important;}.has-error-border-color{border-color: var(--wp--preset--color--error) !important;}.has-error-hover-border-color{border-color: var(--wp--preset--color--error-hover) !important;}.has-success-border-color{border-color: var(--wp--preset--color--success) !important;}.has-success-hover-border-color{border-color: var(--wp--preset--color--success-hover) !important;}.has-border-border-color{border-color: var(--wp--preset--color--border) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}.has-figtree-font-family{font-family: var(--wp--preset--font-family--figtree) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+
+<link rel='stylesheet' id='kth-main-style-css' href='https://www.kth.se/blogs/pdc/wp-content/themes/kth-blog-theme-2025/style.css?ver=1.8.0' media='all' />
+<link rel='stylesheet' id='theme-style-css' href='https://www.kth.se/blogs/pdc/wp-content/themes/kth-blog-theme-2025/style.css?ver=1770804378' media='all' />
+<script id="jquery-core-js" src="https://www.kth.se/blogs/pdc/wp-includes/js/jquery/jquery.min.js?ver=3.7.1"></script>
+<script id="jquery-js-after">
+jQuery(document).ready(function($) {
+            // Always show comment section if a comment was submitted
+            if (sessionStorage.getItem('comment_submitted') === 'true') {
+                $('.comments-section').show();
+            }
+
+            $('.comment-button').on('click', function() {
+                var postId = $(this).attr('data-post-id');
+                var commentSection = $('#comments-section-' + postId);
+                var button = $(this);
+                var commentCount = button.data('comment-count');
+
+                if (commentSection.length) {
+                    commentSection.slideToggle(300, function() {
+                        if (commentSection.is(':visible')) {
+                            button.text(commentCount === 0 ? 'Hide Comment' : 'Hide comments');
+                            button.attr('aria-label', commentCount === 0 ? 'Hide comment' : 'Hide ' + commentCount + ' comments');
+                        } else {
+                            button.text(commentCount === 0 ? 'Leave Comment' : commentCount + ' ' + (commentCount > 1 ? 'Comments' : 'Comment'));
+                            button.attr('aria-label', commentCount === 0 ? 'Leave comment' : 'Show ' + commentCount + ' comments');
+                        }
+                    });
+                }
+            });
+
+            $('.comment-reply-link').on('click', function(e) {
+                e.preventDefault();
+                var commentForm = $('#commentform');
+                var parentCommentId = $(this).data('commentid');
+                if (commentForm.length) {
+                    commentForm.find('#comment_parent').val(parentCommentId);
+                    $('html, body').animate({
+                        scrollTop: commentForm.offset().top
+                    }, 500);
+                }
+            });
+
+            // Handle comment form submission
+            $('#commentform').on('submit', function() {
+                // Store the form data for later use
+                var formData = $(this).serialize();
+                
+                // Always set flag to keep comment section open after submission
+                sessionStorage.setItem('comment_submitted', 'true');
+            });
+            
+            // Left Sidebar Mobile Toggle
+            $('.left-sidebar-toggle').on('click', function() {
+                var $button = $(this); // Escaped $
+                var $menu = $('#sidebar-navigation'); // Escaped $
+                var isExpanded = $button.attr('aria-expanded') === 'true'; // Escaped $
+
+                $button.attr('aria-expanded', !isExpanded); // Escaped $
+                $menu.toggleClass('is-open');  // Escaped $
+                // Optional: Change hamburger icon text/look
+                // $button.find('.hamburger-icon').text(isExpanded ? '☰' : '✕'); // Escaped $
+            });
+
+            // Check if we should show the moderation message (on page load after redirect)
+            if (false && sessionStorage.getItem('comment_submitted') === 'true') {
+                // Clear the flag
+                sessionStorage.removeItem('comment_submitted');
+                
+                // Create the moderation message using the alert component HTML
+                var moderationMessage = $("<div class='kth-alert info'><h3>Awaiting Moderation</h3><p>Your comment is awaiting moderation. It will be displayed when approved.</p></div>");
+                
+                // Position before the form-comment-title element and add margin-bottom
+                $('.form-comment-title').before(moderationMessage);
+                moderationMessage.css('margin-bottom', '1rem');
+                
+                setTimeout(function() {
+                    var windowHeight = $(window).height();
+                    var messageOffset = moderationMessage.offset().top;
+                    var scrollPosition = messageOffset - (windowHeight / 2) + (moderationMessage.outerHeight() / 2);
+                    $('html, body').animate({
+                        scrollTop: scrollPosition
+                    }, 500);
+                }, 100);
+            }
+        });
+    
+
+        jQuery(document).ready(function($) {
+            // Check URL parameters for open_comments=1
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('open_comments') === '1') {
+                // If we have a hash in URL, get the corresponding comment section
+                const hashId = window.location.hash;
+                if (hashId && $(hashId).length) {
+                    // Show the comments section
+                    $(hashId).show();
+                    
+                    // Ensure smooth scrolling to the comment section
+                    setTimeout(function() {
+                        $('html, body').animate({
+                            scrollTop: $(hashId).offset().top - 70 // Adjust offset as needed
+                        }, 500);
+                    }, 300);
+                }
+            }
+        });
+    
+//# sourceURL=jquery-js-after
+</script>
+<script data-wp-strategy="defer" defer id="stop-user-enumeration-js" src="https://www.kth.se/blogs/pdc/wp-content/plugins/stop-user-enumeration/frontend/js/frontend.js?ver=1.7.7"></script>
+<link rel="https://api.w.org/" href="https://www.kth.se/blogs/pdc/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://www.kth.se/blogs/pdc/wp-json/wp/v2/posts/180" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://www.kth.se/blogs/pdc/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 7.1" />
+<link rel="canonical" href="https://www.kth.se/blogs/pdc/2018/11/scalability-strong-and-weak-scaling/" />
+<link rel='shortlink' href='https://wp.me/p9W9Im-2U' />
+
+ 
+  <script type='text/javascript'> 
+
+    $ = jQuery;
+  
+    var KthToolbarConfig = {
+      locale : 'sv_SE',
+      loginUrl: 'https://login.kth.se/login?service=' + escape(location.href),
+      loginMethod : 'post'
+    };
+    
+    $(document).ready(function() {   
+      $.getScript('https://www.kth.se/social/toolbar/widget.js');  
+    });
+
+  </script>
+	    
+
+
+
+
+  <!-- Begin JavaScript contentId-1_714097 -->
+  <script>var _mtm = window._mtm = window._mtm || [];
+_mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
+var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+g.async=true; g.src='https://analytics-stat.sys.kth.se/kth/matomo/js/container_vsVPCyVy.js'; s.parentNode.insertBefore(g,s);
+window.addEventListener('load', function() {
+  /* global klaro, _paq */
+  if (typeof klaro !== 'undefined' && typeof klaroConfig !== 'undefined' && klaro) {
+      const _klaroMgr = klaro.getManager();
+      if (_klaroMgr.confirmed && _klaroMgr.getConsent('analytics-consent')) {
+          _paq.push(['setCookieConsentGiven']);
+      }
+  }
+});</script>
+  
+  
+  <!-- End JavaScript contentId-1_714097 -->
+
+
+</head>
+
+<body class="wp-singular post-template-default single single-post postid-180 single-format-standard wp-theme-kth-blog-theme-2025">
+
+<header id="masthead" class="kth-header external">
+    <div class="kth-header__container">
+        <a href="https://www.kth.se" class="kth-logotype">
+            <figure>
+                <img src="https://www.kth.se/img/logotype-white-6f02f4554cba157ca832fa452bf242a4.svg" alt="KTH Logo" width="64" height="64">
+            </figure>
+        </a>
+        
+        
+
+
+
+
+
+  <nav class="kth-mega-menu" aria-label="Main menu" data-ajax-path="/cm/1.855134?l=en&amp;contentIdPath=/2.10/1.855134/&amp;target=">
+    <ul>
+      
+        <li><button data-id="1.202249" class="kth-menu-item dropdown">
+            <span>
+              Studies
+            </span>
+          </button>
+          <dialog class="kth-menu-panel">
+            <div class="kth-menu-panel__container">
+              <div class="kth-menu-panel__header">
+                <div>
+                  <a href="/en/studies">
+                    <h2>
+                      Studies
+                    </h2>
+                  </a>
+                </div>
+                <button class="kth-icon-button close" title="Close" aria-label="Close">
+                  <span class="kth-visually-hidden">close</span>
+                </button>
+              </div>
+              <div class="kth-menu-panel__content"></div>
+            </div>
+          </dialog>
+        </li>
+        <li><button data-id="1.202250" class="kth-menu-item dropdown">
+            <span>
+              Research
+            </span>
+          </button>
+          <dialog class="kth-menu-panel">
+            <div class="kth-menu-panel__container">
+              <div class="kth-menu-panel__header">
+                <div>
+                  <a href="/en/forskning">
+                    <h2>
+                      Research
+                    </h2>
+                  </a>
+                </div>
+                <button class="kth-icon-button close" title="Close" aria-label="Close">
+                  <span class="kth-visually-hidden">close</span>
+                </button>
+              </div>
+              <div class="kth-menu-panel__content"></div>
+            </div>
+          </dialog>
+        </li>
+        <li><button data-id="1.202255" class="kth-menu-item dropdown">
+            <span>
+              Collaboration
+            </span>
+          </button>
+          <dialog class="kth-menu-panel">
+            <div class="kth-menu-panel__container">
+              <div class="kth-menu-panel__header">
+                <div>
+                  <a href="/en/samverkan">
+                    <h2>
+                      Collaboration
+                    </h2>
+                  </a>
+                </div>
+                <button class="kth-icon-button close" title="Close" aria-label="Close">
+                  <span class="kth-visually-hidden">close</span>
+                </button>
+              </div>
+              <div class="kth-menu-panel__content"></div>
+            </div>
+          </dialog>
+        </li>
+        <li><button data-id="1.863192" class="kth-menu-item dropdown">
+            <span>
+              About KTH
+            </span>
+          </button>
+          <dialog class="kth-menu-panel">
+            <div class="kth-menu-panel__container">
+              <div class="kth-menu-panel__header">
+                <div>
+                  <a href="/en/om">
+                    <h2>
+                      About KTH
+                    </h2>
+                  </a>
+                </div>
+                <button class="kth-icon-button close" title="Close" aria-label="Close">
+                  <span class="kth-visually-hidden">close</span>
+                </button>
+              </div>
+              <div class="kth-menu-panel__content"></div>
+            </div>
+          </dialog>
+        </li>
+        <li><button data-id="1.853617" class="kth-menu-item dropdown">
+            <span>
+              Library
+            </span>
+          </button>
+          <dialog class="kth-menu-panel">
+            <div class="kth-menu-panel__container">
+              <div class="kth-menu-panel__header">
+                <div>
+                  <a href="/en/biblioteket">
+                    <h2>
+                      Library
+                    </h2>
+                  </a>
+                </div>
+                <button class="kth-icon-button close" title="Close" aria-label="Close">
+                  <span class="kth-visually-hidden">close</span>
+                </button>
+              </div>
+              <div class="kth-menu-panel__content"></div>
+            </div>
+          </dialog>
+        </li>
+      
+    </ul>
+  </nav>
+
+  <!-- Mobile menu -->
+  <nav class="kth-mega-menu--collapsable">
+    <dialog class="kth-mobile-menu">
+      <div class="kth-mobile-menu__navigation">
+        <button class="kth-icon-button close" title="Close" aria-label="Close">
+          <span class="kth-visually-hidden">Close</span>
+        </button>
+      </div>
+      <div class="kth-mobile-menu__content">
+        <ul class="kth-mobile-menu__items">
+          <li>
+            <button class="kth-mobile-menu__item" data-id="1.202249">
+              <span>
+                Studies
+              </span>
+            </button>
+            <dialog class="kth-menu-panel--modal">
+              <button class="kth-icon-button close" title="Close" aria-label="Close">
+                <span class="kth-visually-hidden">Close</span>
+              </button>
+              <div class="kth-menu-panel__content"></div>
+            </dialog>
+          </li>
+          <li>
+            <button class="kth-mobile-menu__item" data-id="1.202250">
+              <span>
+                Research
+              </span>
+            </button>
+            <dialog class="kth-menu-panel--modal">
+              <button class="kth-icon-button close" title="Close" aria-label="Close">
+                <span class="kth-visually-hidden">Close</span>
+              </button>
+              <div class="kth-menu-panel__content"></div>
+            </dialog>
+          </li>
+          <li>
+            <button class="kth-mobile-menu__item" data-id="1.202255">
+              <span>
+                Collaboration
+              </span>
+            </button>
+            <dialog class="kth-menu-panel--modal">
+              <button class="kth-icon-button close" title="Close" aria-label="Close">
+                <span class="kth-visually-hidden">Close</span>
+              </button>
+              <div class="kth-menu-panel__content"></div>
+            </dialog>
+          </li>
+          <li>
+            <button class="kth-mobile-menu__item" data-id="1.863192">
+              <span>
+                About KTH
+              </span>
+            </button>
+            <dialog class="kth-menu-panel--modal">
+              <button class="kth-icon-button close" title="Close" aria-label="Close">
+                <span class="kth-visually-hidden">Close</span>
+              </button>
+              <div class="kth-menu-panel__content"></div>
+            </dialog>
+          </li>
+          <li>
+            <button class="kth-mobile-menu__item" data-id="1.853617">
+              <span>
+                Library
+              </span>
+            </button>
+            <dialog class="kth-menu-panel--modal">
+              <button class="kth-icon-button close" title="Close" aria-label="Close">
+                <span class="kth-visually-hidden">Close</span>
+              </button>
+              <div class="kth-menu-panel__content"></div>
+            </dialog>
+          </li>
+        </ul>
+      </div>
+    </dialog>
+    <dialog class="kth-mobile-menu details" data-id="1.202249">
+      <div class="kth-mobile-menu__navigation">
+        <button class="kth-button back">Main menu</button>
+        <button class="kth-icon-button close" title="Close" aria-label="Close">
+          <span class="kth-visually-hidden">Close</span>
+        </button>
+      </div>
+      <div class="kth-mobile-menu__header">
+        <a href="/en/studies">
+          <h2>
+            Studies
+          </h2>
+        </a>
+      </div>
+      <div class="kth-mobile-menu__content">
+        <div class="kth-mobile-menu__cortina-content"></div>
+      </div>
+    </dialog><dialog class="kth-mobile-menu details" data-id="1.202250">
+      <div class="kth-mobile-menu__navigation">
+        <button class="kth-button back">Main menu</button>
+        <button class="kth-icon-button close" title="Close" aria-label="Close">
+          <span class="kth-visually-hidden">Close</span>
+        </button>
+      </div>
+      <div class="kth-mobile-menu__header">
+        <a href="/en/forskning">
+          <h2>
+            Research
+          </h2>
+        </a>
+      </div>
+      <div class="kth-mobile-menu__content">
+        <div class="kth-mobile-menu__cortina-content"></div>
+      </div>
+    </dialog><dialog class="kth-mobile-menu details" data-id="1.202255">
+      <div class="kth-mobile-menu__navigation">
+        <button class="kth-button back">Main menu</button>
+        <button class="kth-icon-button close" title="Close" aria-label="Close">
+          <span class="kth-visually-hidden">Close</span>
+        </button>
+      </div>
+      <div class="kth-mobile-menu__header">
+        <a href="/en/samverkan">
+          <h2>
+            Collaboration
+          </h2>
+        </a>
+      </div>
+      <div class="kth-mobile-menu__content">
+        <div class="kth-mobile-menu__cortina-content"></div>
+      </div>
+    </dialog><dialog class="kth-mobile-menu details" data-id="1.863192">
+      <div class="kth-mobile-menu__navigation">
+        <button class="kth-button back">Main menu</button>
+        <button class="kth-icon-button close" title="Close" aria-label="Close">
+          <span class="kth-visually-hidden">Close</span>
+        </button>
+      </div>
+      <div class="kth-mobile-menu__header">
+        <a href="/en/om">
+          <h2>
+            About KTH
+          </h2>
+        </a>
+      </div>
+      <div class="kth-mobile-menu__content">
+        <div class="kth-mobile-menu__cortina-content"></div>
+      </div>
+    </dialog><dialog class="kth-mobile-menu details" data-id="1.853617">
+      <div class="kth-mobile-menu__navigation">
+        <button class="kth-button back">Main menu</button>
+        <button class="kth-icon-button close" title="Close" aria-label="Close">
+          <span class="kth-visually-hidden">Close</span>
+        </button>
+      </div>
+      <div class="kth-mobile-menu__header">
+        <a href="/en/biblioteket">
+          <h2>
+            Library
+          </h2>
+        </a>
+      </div>
+      <div class="kth-mobile-menu__content">
+        <div class="kth-mobile-menu__cortina-content"></div>
+      </div>
+    </dialog>
+  </nav>
+  <!-- Mobile menu -->
+
+  
+  <script>/* eslint-disable no-unused-expressions, no-unused-vars, no-undef */"use strict";window.addEventListener("load",()=>{function e(e){return document.querySelector(".kth-mega-menu[data-ajax-path]")?.getAttribute("data-ajax-path")+e}function t(){document.querySelectorAll("dialog").forEach(e=>e.close())}function n(e){const n=e.querySelector(".kth-icon-button.close");e.addEventListener("keydown",t=>{"Escape"===t.key&&e.close()}),n instanceof HTMLButtonElement&&n.addEventListener("click",()=>{t()})}function o(e,o){n(e),o.addEventListener("click",n=>{n.preventDefault(),e.open?t():(t(),e.show())}),document.addEventListener("click",n=>{!e.open||n.composedPath().includes(o)||n.composedPath().includes(e)||(n.preventDefault(),t())})}function c(e,o,c){const i=e.querySelector(".kth-button.back");n(e),o.addEventListener("click",n=>{n.preventDefault(),t(),e.showModal()}),i instanceof HTMLButtonElement&&i.addEventListener("click",()=>{e.close(),c&&c.showModal()})}var i,l;document.querySelectorAll(".kth-menu-item[data-id], .kth-menu-item--modal[data-id]").forEach(t=>{const n=t.nextElementSibling,o=n?.querySelector(".kth-menu-panel__content");if(!(t instanceof HTMLElement))return;if(!(n instanceof HTMLDialogElement))return;const c=t.dataset.id;let i;function l(){o instanceof HTMLElement&&(i||(i=fetch(e(c)).then(e=>e.text())),i.then(e=>{o.innerHTML=e}))}t.addEventListener("mouseover",l),t.addEventListener("click",l)}),document.querySelectorAll(".kth-mobile-menu__item[data-id]").forEach(t=>{if(!(t instanceof HTMLElement))return;const n=t.dataset.id,o=document.querySelector(`.kth-mobile-menu[data-id='${n}']`),c=o?.querySelector(".kth-mobile-menu__cortina-content");if(!(o instanceof HTMLDialogElement))return;let i;t.addEventListener("click",function(){c instanceof HTMLElement&&(i||(i=fetch(e(n)).then(e=>e.text())),i.then(e=>{c.innerHTML=e}))})}),function(e,n){if(e){for(const e of n){if(!(e instanceof HTMLElement))continue;const t=e.nextElementSibling;t instanceof HTMLDialogElement&&o(t,e)}e.addEventListener("focusout",function(n){const o=n.relatedTarget;o&&o instanceof Node&&!e.contains(o)&&t()})}}(document.querySelector(".kth-header"),document.querySelectorAll(".kth-mega-menu .kth-menu-item")),i=document.querySelector(".kth-menu-item.collapsable"),l=document.querySelector(".kth-mobile-menu"),i instanceof HTMLElement&&l instanceof HTMLDialogElement&&c(l,i),function(e,t){if(!t||t instanceof HTMLDialogElement)for(const n of e){if(!(n instanceof HTMLElement))continue;const e=n.getAttribute("data-id"),o=document.querySelector(`.kth-mobile-menu[data-id='${e}']`);if(!(o instanceof HTMLDialogElement))return;c(o,n,t)}}(document.querySelectorAll(".kth-mobile-menu__item"),document.querySelector(".kth-mobile-menu"))}),window.addEventListener("load",()=>{const e={threshold:32,className:"collapsed"};function t(e,{threshold:t,className:n}){window.scrollY>t?e?.classList.add(n):e?.classList.remove(n)}!function(n,o=e){t(n,o),window.addEventListener("scroll",()=>{t(n,o)})}(document.querySelector(".kth-header"))});</script>
+
+
+        
+        <a class="skip-link screen-reader-text" href="#content">Skip to content</a>
+        
+        <ul class="kth-header__tools">
+            <li>
+                <button class="kth-menu-item search">
+                    <span>
+                        Search                    </span>
+                </button>
+                <dialog class="kth-menu-panel">
+                    <div class="kth-menu-panel__container search">
+                        <button class="kth-icon-button close">
+                            <span class="kth-visually-hidden">
+                                Close                            </span>
+                        </button>
+                        <div class="kth-menu-panel__content search">
+                            
+
+
+
+
+  <div class="block search mainWidget default-size" data-cid="1.77262" lang="en">
+    <div id="widget_cdyjxdtn" class="searchWidgetContainer"><div class="searchWidget"><div class="searchInputBar"><form class="searchInputForm" method="GET" role="search" action="https://www.kth.se/search"><div class="searchAutoCompleteField kth-search"><label class="inputbar-label" for="widget_cdyjxdtn_search__Field">Search the KTH website</label><input id="widget_cdyjxdtn_search__Field" name="q" autoComplete="off" type="text" maxLength="1024" value=""/><button type="submit"><span class="kth-visually-hidden">Search</span></button></div><input type="hidden" name="urlFilter" value=""/><input type="hidden" name="entityFilter" value=""/><input type="hidden" name="metaSystemFilter" value=""/><input type="hidden" name="documentFilter" value=""/><input type="hidden" name="filterLabel" value=""/><input type="hidden" name="l" value="en"/><input type="hidden" name="noscript" class="noscriptInput" value=""/></form></div><div class="searchAlternativesWidget"><div class="searchAlternativesWidgetLinks"><a href="https://www.kth.se/en/student/search">Search the Student web</a><a href="https://intra.kth.se/search?l=en">Search the Intranet</a></div></div></div></div>
+
+<script>
+  (() => {
+    const SCRIPT_PATH = 'https://www.kth.se/search/static/widget.js?v=2.0.0-20260903.3_31972c27'
+    const STYLE_PATH = 'https://www.kth.se/search/static/widget.css?v=2.0.0-20260903.3_31972c27'
+    const DATA_PATH = 'https://www.kth.se/search/widgetData.js?widgetId=widget_cdyjxdtn&placeholder=Search%20the%20KTH%20website&l=en&includeLinks=true'
+    const WIDGET_ID = 'widget_cdyjxdtn'
+    const scriptAnchor = document.currentScript
+
+    new IntersectionObserver((entries, observer) => {
+
+      if (entries[0].target?.checkVisibility?.()) {
+
+        if (!window.searchWidgetIsLoaded) {
+
+          const styleElement = document.createElement('link')
+          styleElement.href = STYLE_PATH
+          styleElement.media = "screen"
+          styleElement.rel = "stylesheet"
+          styleElement.async = 1
+          scriptAnchor.after(styleElement)
+
+          const scriptElement = document.createElement('script')
+          scriptElement.src = SCRIPT_PATH
+          scriptElement.async = 1
+          scriptAnchor.after(scriptElement)
+        }
+
+        const dataElement = document.createElement('script')
+        dataElement.src = DATA_PATH
+        dataElement.async = 1
+        scriptAnchor.after(dataElement)
+
+        window.searchWidgetIsLoaded = true
+        observer.disconnect()
+      }
+    }).observe(document.getElementById(WIDGET_ID))
+  })()
+</script>
+    
+    <script>/* eslint-disable no-unused-expressions, no-unused-vars, no-undef */"use strict";!function(){function e(){document.querySelectorAll("dialog").forEach(e=>e.close())}window.addEventListener("load",function(){document.querySelectorAll(".block.search").forEach(t=>{t.parentElement.className.includes("kth-menu-panel__content")&&function(t,n){if(!(n instanceof HTMLElement))return;const c=n.nextElementSibling;if(!(c instanceof HTMLDialogElement))return;c.addEventListener("keydown",t=>{"Escape"===t.key&&e()});const o=c.querySelector(".close");o instanceof HTMLButtonElement&&o.addEventListener("click",()=>{e()}),n.addEventListener("click",n=>{n.preventDefault(),c.open?e():(e(),c.show(),function(e){const t=e.querySelector("template");if(null===t)return;const n=t.content;t.replaceWith(n)}(t),function(e){const t=e.querySelector(".searchAutoCompleteField")?.querySelector("input");t&&t.focus()}(c))}),document.addEventListener("click",t=>{!c.open||t.composedPath().includes(n)||t.composedPath().includes(c)||(t.preventDefault(),e())})}(t,document.querySelector(".kth-menu-item.search"))})})}();</script>
+  </div>
+
+
+                        </div>
+                    </div>
+                </dialog>
+            </li>
+            <li>
+                            </li>
+        </ul>
+
+        <button class="kth-menu-item menu collapsable">
+            <span>
+                Menu            </span>
+        </button>
+    </div>
+</header>
+
+<div id="page">
+    <a class="skip-link screen-reader-text" href="#content">Skip to content</a>
+    
+        
+    <div id="content" class="kth-main-content site-content">
+        
+<nav class="kth-breadcrumbs" aria-label="Breadcrumb"><ul><li><a href="https://www.kth.se">KTH</a></li><li><a href="https://www.kth.se/blogs/pdc">PDC Blog</a></li></ul></nav>
+
+<div id="kth-blog-content-wrapper">
+
+    <!-- Left Sidebar -->
+    <aside id="left-sidebar" class="sidebar-area">
+        
+<aside id="left-sidebar" class="widget-area sidebar left-sidebar" role="complementary">
+    
+    <button class="left-sidebar-toggle" aria-controls="sidebar-navigation" aria-expanded="false">
+        <span class="hamburger-icon"></span>         <span class="left-sidebar-toggle-title">PDC Blog</span>  
+    </button>
+
+    <nav id="sidebar-navigation" class="kth-local-navigation" role="navigation" aria-label="Sidebar Menu">
+                    <h2 class="sidebar-widget-title sidebar-title">PDC Blog</h2>
+        
+        <ul class="nav-list"><li id="menu-item-332" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-home menu-item-332"><a href="https://www.kth.se/blogs/pdc/">Home</a></li>
+<li id="menu-item-333" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-333"><a href="https://www.kth.se/blogs/pdc/about-pdc-blog/">About the PDC Blog</a></li>
+<li id="menu-item-334" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-334"><a href="https://www.pdc.kth.se/">Main PDC Website</a></li>
+</ul>    </nav>
+</aside>    </aside>
+    
+    <!-- Main Content -->
+    <div id="main-content" class="content-area">
+        <main id="main" class="site-main">
+        <div class="breadcrumbs-container">
+    
+</div>
+        
+            
+<article id="post-180" class="blog-post post-180 post type-post status-publish format-standard hentry category-performance tag-parallelization tag-scalability tag-scaling">
+    
+<div class="post-header">
+            <h1 class="post-title post-title-h1">
+            <a href="https://www.kth.se/blogs/pdc/2018/11/scalability-strong-and-weak-scaling/">Scalability: strong and weak scaling</a>
+            </h1>
+        
+        <div class="post-meta">
+        <span class="post-author">
+            <p>Xin Li</p>
+        </span>
+        <span class="post-date">, 2018-11-09</span>
+    </div>
+    </div>    
+<div class="post-content">
+    <div class="post-content-wrapper"><p class="p1">High performance computing (HPC) clusters are able to solve big problems using a large number of processors. This is also known as <a href="https://en.wikipedia.org/wiki/Parallel_computing">parallel computing</a>, where many processors work simultaneously to produce exceptional computational power and to significantly reduce the total computational time. In such scenarios, <strong>scalability</strong> or <strong>scaling</strong> is widely used to indicate the ability of hardware and software to deliver greater computational power when the amount of resources is increased. For HPC clusters, it is important that they are scalable, in other words that the capacity of the whole system can be proportionally increased by adding more hardware. For software, scalability is sometimes referred to as parallelization efficiency — the ratio between the actual speedup and the ideal speedup obtained when using a certain number of processors.</p>
+<p class="p1">In this post we focus on software scalability and discuss two common types of scaling. The <strong>speedup</strong> in parallel computing can be straightforwardly defined as</p>
+<p>speedup = <em>t</em><sub>1</sub> / <em>t<sub>N</sub></em></p>
+<p class="p1">where <em>t</em><sub>1</sub> is the computational time for running the software using one processor, and <em>t<sub>N</sub></em> is the computational time running the same software with <em>N</em> processors. Ideally, we would like software to have a linear speedup that is equal to the number of processors (speedup = <em>N</em>), as that would mean that every processor would be contributing 100% of its computational power. Unfortunately, this is a very challenging goal for real applications to attain.</p>
+<p><span id="more-180"></span></p>
+<h2>Amdahl&#8217;s law and strong scaling</h2>
+<p class="p1">In 1967, Amdahl pointed out that the speedup is limited by the fraction of the serial part of the software that is not amenable to parallelization [1]. <strong>Amdahl’s law</strong> can be formulated as follows</p>
+<p class="p1">speedup = 1 / (<em>s</em> + <em>p </em>/ <em>N</em>)</p>
+<p class="p1">where <em>s</em> is the proportion of execution time spent on the serial part, <em>p</em> is the proportion of execution time spent on the part that can be parallelized, and <em>N</em> is the number of processors. Amdahl’s law states that, for a fixed problem, the upper limit of speedup is determined by the serial fraction of the code. This is called <strong>strong scaling</strong> and can be explained by the following example.</p>
+<p class="p1">Consider a program that takes 20 hours to run using a single processor core. If a particular part of the program, which takes one hour to execute, cannot be parallelized (<em>s</em> = 1/20 = 0.05), and if the code that takes up the remaining 19 hours of execution time can be parallelized (<em>p</em> = 1 − <em>s</em> = 0.95), then regardless of how many processors are devoted to a parallelized execution of this program, the minimum execution time cannot be less than that critical one hour. Hence, the theoretical speedup is limited to at most 20 times (when <em>N</em> = ∞, speedup = 1/<em>s</em> = 20). As such, the parallelization efficiency decreases as the amount of resources increases. For this reason, parallel computing with many processors is useful only for highly parallelized programs.</p>
+<p class="p1"><img fetchpriority="high" decoding="async" class="wp-image-199 aligncenter" src="https://www.kth.se/blogs/pdc/files/2018/11/scaling_amdahl-625x313.png" alt="" width="565" height="283" srcset="https://www.kth.se/blogs/pdc/files/2018/11/scaling_amdahl-625x313.png 625w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_amdahl-768x384.png 768w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_amdahl-900x450.png 900w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_amdahl-624x312.png 624w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_amdahl.png 1000w" sizes="(max-width: 565px) 100vw, 565px" /></p>
+<h2>Gustafson&#8217;s law and weak scaling</h2>
+<p class="p1">Amdahl’s law gives the upper limit of speedup for a problem of fixed size. This seems to be a bottleneck for parallel computing; if one would like to gain a 500 times speedup on 1000 processors, Amdahl’s law requires that the proportion of serial part cannot exceed 0.1%. However, as Gustafson pointed out [2], in practice the sizes of problems scale with the amount of available resources. If a problem only requires a small amount of resources, it is not beneficial to use a large amount of resources to carry out the computation. A more reasonable choice is to use small amounts of resources for small problems and larger quantities of resources for big problems.</p>
+<p class="p1"><strong>Gustafson’s law</strong> [2] was proposed in 1988, and is based on the approximations that the parallel part scales linearly with the amount of resources, and that the serial part does not increase with respect to the size of the problem. It provides the formula for scaled speedup</p>
+<p class="p1">scaled speedup = <em>s</em> + <em>p</em> × <em>N</em></p>
+<p class="p1">where <em>s</em>, <em>p</em> and <em>N</em> have the same meaning as in Amdahl’s law. With Gustafson&#8217;s law the scaled speedup increases linearly with respect to the number of processors (with a slope smaller than one), and there is no upper limit for the scaled speedup. This is called <strong>weak scaling</strong>, where the scaled speedup is calculated based on the amount of work done for a scaled problem size (in contrast to Amdahl’s law which focuses on fixed problem size). If we apply Gustafson’s law to the previous example of <em>s </em>= 0.05 and <em>p </em>= 0.95, the scaled speedup will become infinity when infinitely many processors are used. Realistically, if we have <em>N</em> = 1000, the scaled speedup will be 950.</p>
+<p class="p1"><img decoding="async" class="wp-image-200 aligncenter" src="https://www.kth.se/blogs/pdc/files/2018/11/scaling_gustafson-625x313.png" alt="" width="565" height="283" srcset="https://www.kth.se/blogs/pdc/files/2018/11/scaling_gustafson-625x313.png 625w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_gustafson-768x384.png 768w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_gustafson-900x450.png 900w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_gustafson-624x312.png 624w, https://www.kth.se/blogs/pdc/files/2018/11/scaling_gustafson.png 1000w" sizes="(max-width: 565px) 100vw, 565px" /></p>
+<h2 class="p1">Measuring parallel scaling performance</h2>
+<p class="p1">When using HPC clusters, it is almost always worthwhile to measure the parallel scaling of your jobs. The measurement of strong scaling is done by testing how the overall computational time of the job scales with the number of processing elements (being either threads or MPI processes), while the test for weak scaling is done by increasing both the job size and the number of processing elements. The results from the parallel scaling tests will provide a good indication of the amount of resources to request for the size of the particular job.</p>
+<p class="p1">To illustrate the process of measuring parallel scaling, we use an example of OpenMP code, <a href="https://people.sc.fsu.edu/~jburkardt/c_src/julia_set_openmp/julia_set_openmp.c">julia_set_openmp.c</a>, which produces an image of a <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a>. A Julia set is associated with a complex function and can be converted to an image by mapping each pixel onto the complex plane. An example of an image for a Julia set is shown below.</p>
+<p><img decoding="async" class=" wp-image-201 aligncenter" src="https://www.kth.se/blogs/pdc/files/2018/11/julia_set_2-625x411.png" alt="" width="415" height="273" srcset="https://www.kth.se/blogs/pdc/files/2018/11/julia_set_2-625x411.png 625w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_2-768x505.png 768w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_2-900x592.png 900w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_2-624x411.png 624w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_2.png 1199w" sizes="(max-width: 415px) 100vw, 415px" /></p>
+<p class="p1">The <a href="https://people.sc.fsu.edu/~jburkardt/c_src/julia_set_openmp/julia_set_openmp.c">julia_set_openmp.c</a> code contains two OpenMP directives that start with “<code>#pragma omp</code>” (read more about OpenMP syntax from the <a href="https://www.openmp.org/wp-content/uploads/OpenMP-4.0-C.pdf">OpenMP quick reference card</a>). In practice these two “<code>#pragma omp</code>” lines can be merged into one, as shown below. Note that we have added the <code>schedule(dynamic)</code> option, which provides better workload distribution at the cost of some extra overhead. This option also mimics the parallelization overhead in real applications (e.g. communication and load-balancing in MPI-parallelized programs).</p>
+<div class="highlight-default">
+<div class="highlight">
+<pre style="color: #000000;background: #ffffff"><span style="color: #004a43">#</span><span style="color: #004a43;font-weight: bold"> pragma</span><span style="color: #bb7977;font-weight: bold"> omp parallel for schedule(dynamic) \</span>
+<span style="color: #004a43">  shared </span><span style="color: #808030">(</span><span style="color: #004a43"> h</span><span style="color: #808030">,</span><span style="color: #004a43"> w</span><span style="color: #808030">,</span><span style="color: #004a43"> xl</span><span style="color: #808030">,</span><span style="color: #004a43"> xr</span><span style="color: #808030">,</span><span style="color: #004a43"> yb</span><span style="color: #808030">,</span><span style="color: #004a43"> yt </span><span style="color: #808030">)</span><span style="color: #004a43"> \</span>
+<span style="color: #004a43">  private </span><span style="color: #808030">(</span><span style="color: #004a43"> i</span><span style="color: #808030">,</span><span style="color: #004a43"> j</span><span style="color: #808030">,</span><span style="color: #004a43"> k</span><span style="color: #808030">,</span><span style="color: #004a43"> juliaValue </span><span style="color: #808030">)</span>
+  <span style="color: #800000;font-weight: bold">for</span> <span style="color: #808030">(</span> j <span style="color: #808030">=</span> <span style="color: #008c00">0</span><span style="color: #800080">;</span> j <span style="color: #808030">&lt;</span> h<span style="color: #800080">;</span> j<span style="color: #808030">+</span><span style="color: #808030">+</span> <span style="color: #808030">)</span>
+  <span style="color: #800080">{</span>
+    <span style="color: #808030">.</span><span style="color: #808030">.</span><span style="color: #808030">.</span>
+  <span style="color: #800080">}</span>
+</pre>
+</div>
+</div>
+<p class="p1">The <code>main</code> function of <a href="https://people.sc.fsu.edu/~jburkardt/c_src/julia_set_openmp/julia_set_openmp.c">julia_set_openmp.c</a> is also modified to accept a height and a width as integer arguments from the command line.</p>
+<div class="highlight-default">
+<div class="highlight">
+<pre style="color: #000000;background: #ffffff"><span style="color: #800000;font-weight: bold">int</span> <span style="color: #400000">main</span> <span style="color: #808030">(</span> <span style="color: #800000;font-weight: bold">int</span> argc<span style="color: #808030">,</span> <span style="color: #800000;font-weight: bold">char</span><span style="color: #808030">*</span> argv<span style="color: #808030">[</span><span style="color: #808030">]</span> <span style="color: #808030">)</span>
+<span style="color: #800080">{</span>
+  <span style="color: #800000;font-weight: bold">if</span> <span style="color: #808030">(</span> argc <span style="color: #808030">&lt;</span> <span style="color: #008c00">3</span> <span style="color: #808030">)</span>
+  <span style="color: #800080">{</span>
+    <span style="color: #603000">printf</span> <span style="color: #808030">(</span> <span style="color: #800000">"</span><span style="color: #0000e6">Usage: ./julia_set_openmp height width</span><span style="color: #0f69ff">\n</span><span style="color: #800000">"</span> <span style="color: #808030">)</span><span style="color: #800080">;</span>
+    <span style="color: #800000;font-weight: bold">return</span> <span style="color: #008c00">0</span><span style="color: #800080">;</span>
+  <span style="color: #800080">}</span>
+  <span style="color: #800000;font-weight: bold">int</span> h <span style="color: #808030">=</span> <span style="color: #603000">atoi</span><span style="color: #808030">(</span>argv<span style="color: #808030">[</span><span style="color: #008c00">1</span><span style="color: #808030">]</span><span style="color: #808030">)</span><span style="color: #800080">;</span>
+  <span style="color: #800000;font-weight: bold">int</span> w <span style="color: #808030">=</span> <span style="color: #603000">atoi</span><span style="color: #808030">(</span>argv<span style="color: #808030">[</span><span style="color: #008c00">2</span><span style="color: #808030">]</span><span style="color: #808030">)</span><span style="color: #800080">;</span>
+  <span style="color: #808030">.</span><span style="color: #808030">.</span><span style="color: #808030">.</span>
+<span style="color: #800080">}</span>
+</pre>
+</div>
+</div>
+<p class="p1">The strong scaling is tested by running the code with different numbers of threads, while keeping the height and width constant. The computational time for generating the Julia set is monitored for each calculation. The results are shown in Table 1 and Figure 1. In Figure 1 we also show the fitted curve based on Amdahl&#8217;s law.</p>
+<p>The weak scaling is measured by running the code with different numbers of threads and with a correspondingly scaled height. The width was kept constant. The results of the weak scaling test are shown in Table 2 and Figure 2. In Figure 2 we also show the fitted curve based on Gustafson&#8217;s law.</p>
+<p style="text-align: center"><strong>Table 1:</strong> Strong scaling for Julia set generator code</p>
+<table style="width: 100%">
+<tbody>
+<tr>
+<th style="text-align: center">height</th>
+<th style="text-align: center">width</th>
+<th style="text-align: center">threads</th>
+<th style="text-align: center">time</th>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">1</td>
+<td style="text-align: center">3.932 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">2</td>
+<td style="text-align: center">2.006 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">4</td>
+<td style="text-align: center">1.088 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">8</td>
+<td style="text-align: center">0.613 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">12</td>
+<td style="text-align: center">0.441 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">16</td>
+<td style="text-align: center">0.352 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">24</td>
+<td style="text-align: center">0.262 sec</td>
+</tr>
+</tbody>
+</table>
+<p style="text-align: center"><strong>Table 2:</strong> Weak scaling for Julia set generator code</p>
+<table style="width: 100%">
+<tbody>
+<tr>
+<th style="text-align: center">height</th>
+<th style="text-align: center">width</th>
+<th style="text-align: center">threads</th>
+<th style="text-align: center">time</th>
+</tr>
+<tr>
+<td style="text-align: center">10000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">1</td>
+<td style="text-align: center">3.940 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">20000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">2</td>
+<td style="text-align: center">3.874 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">40000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">4</td>
+<td style="text-align: center">3.977 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">80000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">8</td>
+<td style="text-align: center">4.258 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">120000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">12</td>
+<td style="text-align: center">4.335 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">160000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">16</td>
+<td style="text-align: center">4.324 sec</td>
+</tr>
+<tr>
+<td style="text-align: center">240000</td>
+<td style="text-align: center">2000</td>
+<td style="text-align: center">24</td>
+<td style="text-align: center">4.378 sec</td>
+</tr>
+</tbody>
+</table>
+<p><img loading="lazy" decoding="async" class="wp-image-204 aligncenter" src="https://www.kth.se/blogs/pdc/files/2018/11/julia_set_strong_scaling_2-625x361.png" alt="" width="445" height="257" srcset="https://www.kth.se/blogs/pdc/files/2018/11/julia_set_strong_scaling_2-625x361.png 625w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_strong_scaling_2-768x444.png 768w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_strong_scaling_2-900x520.png 900w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_strong_scaling_2-624x360.png 624w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_strong_scaling_2.png 1200w" sizes="auto, (max-width: 445px) 100vw, 445px" /></p>
+<p style="text-align: center"><strong>Figure 1:</strong> Plot of strong scaling for Julia set generator code<br />
+The dashed line shows the fitted curve based on Amdahl&#8217;s law.</p>
+<p><img loading="lazy" decoding="async" class="wp-image-205 aligncenter" src="https://www.kth.se/blogs/pdc/files/2018/11/julia_set_weak_scaling_2-625x361.png" alt="" width="445" height="257" srcset="https://www.kth.se/blogs/pdc/files/2018/11/julia_set_weak_scaling_2-625x361.png 625w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_weak_scaling_2-768x444.png 768w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_weak_scaling_2-900x520.png 900w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_weak_scaling_2-624x360.png 624w, https://www.kth.se/blogs/pdc/files/2018/11/julia_set_weak_scaling_2.png 1200w" sizes="auto, (max-width: 445px) 100vw, 445px" /></p>
+<p style="text-align: center"><strong>Figure 2:</strong> Plot of weak scaling for Julia set generator code<br />
+The dashed line shows the fitted curve based on Gustafson&#8217;s law.</p>
+<p>Based on the formulae for Amdahl&#8217;s law and Gustafson&#8217;s law, it is possible to fit the strong and weak scaling results and obtain the ratio of the serial part (<em>s</em>) and the parallel part (<em>p</em>). We have done the fitting in Figures 1 and 2, and the fitted value for the serial fraction <em>s</em> is 0.03 for Amdahl&#8217;s law and 0.1 for Gustafson&#8217;s law. The discrepancy in <em>s</em> is attributed to the approximations in the laws — the serial fraction is assumed to remain constant, and the parallel part is assumed to be sped up in proportion to the number of processing elements (processes/threads). In real applications, the overhead of parallelization may also increase with the job size (e.g. from the dynamic loop scheduling of OpenMP), and in this case it is understandable that the weak scaling test, which involves much larger jobs than those in the strong scaling test, gives a larger serial fraction <em>s</em>.</p>
+<h2 class="p1">Summary</h2>
+<p class="p1">This post discusses two common types of scaling of software: strong scaling and weak scaling. Some key points are summarized below.</p>
+<ul>
+<li class="p1">Scalability is important for parallel computing to be efficient.</li>
+<li>Strong scaling concerns the speedup for a fixed problem size with respect to the number of processors, and is governed by Amdahl&#8217;s law.</li>
+<li>Weak scaling concerns the speedup for a scaled problem size with respect to the number of processors, and is governed by Gustafson&#8217;s law.</li>
+<li>When using HPC clusters, it is almost always worthwhile to measure the scaling of your jobs.</li>
+<li>The results of strong and weak scaling tests provide good indications for the best match between job size and the amount of resources that should be requested for a particular job.</li>
+</ul>
+<h3>References</h3>
+<ol>
+<li>Amdahl, Gene M. (1967). <em>AFIPS Conference Proceedings.</em> (30): 483–485. doi: <a href="https://doi.org/10.1145%2F1465482.1465560">10.1145/1465482.1465560</a></li>
+<li>Gustafson, John L. (1988). <em>Communications of the ACM</em>. 31 (5): 532–533. doi: <a href="https://doi.org/10.1145%2F42411.42415">10.1145/42411.42415</a></li>
+</ol>
+</div></div>    
+<div class="post-footer">
+
+  
+    <div class="post-author-box">
+        <div class="author-avatar">
+            <img src="https://www.kth.se/files/avatar/lxin" width="80" height="80" alt="Xin Li avatar" loading="lazy" class="avatar avatar-80 photo" />        </div>
+        <div class="author-info">
+            <a class="author-name" href="https://www.kth.se/profile/lxin">Xin Li</a>            <span class="post-category">
+                <p>
+                    Categories:                 </p>
+                
+                    <a href="https://www.kth.se/blogs/pdc/category/performance/" rel="category tag">Performance</a>                
+            </span>
+        </div>
+    </div>
+
+    
+  
+            
+<section id="comments-container-180">
+    <div id="comments-section-180" class="comments-section" style="display: none;">
+        
+                    <p>
+                No comments yet. Be the first to comment!            </p>
+        
+                
+    </div>
+    
+<nav class="post-navigation">
+    <div class="nav-previous post-nav-item">
+                    <span class="nav-title">
+                Previous:            </span>
+            <a href="https://www.kth.se/blogs/pdc/2018/08/skip-the-configuration-get-to-the-cluster-docker-way/" rel="prev"><span class="nav-post-title">Skip the configuration, get to the cluster: Docker way</span></a>            </div>
+    <div class="nav-next post-nav-item">
+                    <span class="nav-title">
+                Next:            </span>
+            <a href="https://www.kth.se/blogs/pdc/2019/01/using-jupyter-notebooks-to-manage-slurm-jobs/" rel="next"><span class="nav-post-title">Using Jupyter Notebooks to manage SLURM jobs</span></a>            </div>
+</nav></section>
+
+    
+</div></article>
+
+        </main>
+    </div>
+
+    <!-- Right Sidebar -->
+    <aside id="right-sidebar" class="sidebar-area">
+        
+<aside id="right-sidebar" class="widget-area sidebar right-sidebar" role="complementary">
+            
+		<aside id="recent-posts-4" class="widget widget_recent_entries">
+		<h2 class="widget-title">Recent Posts</h2>
+		<ul>
+											<li>
+					<a href="https://www.kth.se/blogs/pdc/2020/11/working-with-python-virtual-environments/">Working with Python Virtual Environments</a>
+									</li>
+											<li>
+					<a href="https://www.kth.se/blogs/pdc/2019/11/parallel-programming-in-python-mpi4py-part-2/">Parallel programming in Python: mpi4py (part 2)</a>
+									</li>
+											<li>
+					<a href="https://www.kth.se/blogs/pdc/2019/08/parallel-programming-in-python-mpi4py-part-1/">Parallel programming in Python: mpi4py (part 1)</a>
+									</li>
+											<li>
+					<a href="https://www.kth.se/blogs/pdc/2019/04/top500-list-a-brief-introduction/">Top500 list: a brief introduction</a>
+									</li>
+											<li>
+					<a href="https://www.kth.se/blogs/pdc/2019/03/parallel-programming-in-python-multiprocessing-part-2/">Parallel programming in Python: multiprocessing (part 2)</a>
+									</li>
+					</ul>
+
+		</aside><aside id="categories-6" class="widget widget_categories"><h2 class="widget-title">Categories</h2>
+			<ul>
+					<li class="cat-item cat-item-4"><a href="https://www.kth.se/blogs/pdc/category/benchmark/">Benchmark</a> (1)
+</li>
+	<li class="cat-item cat-item-3"><a href="https://www.kth.se/blogs/pdc/category/best-practice/">Best Practice</a> (2)
+</li>
+	<li class="cat-item cat-item-6"><a href="https://www.kth.se/blogs/pdc/category/environment-management/">Environment Management</a> (2)
+</li>
+	<li class="cat-item cat-item-2"><a href="https://www.kth.se/blogs/pdc/category/job-scheduling/">Job Scheduling</a> (2)
+</li>
+	<li class="cat-item cat-item-5"><a href="https://www.kth.se/blogs/pdc/category/performance/">Performance</a> (6)
+</li>
+			</ul>
+
+			</aside><aside id="tag_cloud-2" class="widget widget_tag_cloud"><h2 class="widget-title">Tags</h2><div class="tagcloud"><a href="https://www.kth.se/blogs/pdc/tag/container/" class="tag-cloud-link tag-link-16 tag-link-position-1" style="font-size: 8pt;" aria-label="Container (1 item)">Container<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/docker/" class="tag-cloud-link tag-link-15 tag-link-position-2" style="font-size: 8pt;" aria-label="Docker (1 item)">Docker<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/exascale/" class="tag-cloud-link tag-link-22 tag-link-position-3" style="font-size: 8pt;" aria-label="Exascale (1 item)">Exascale<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/job-submission/" class="tag-cloud-link tag-link-11 tag-link-position-4" style="font-size: 8pt;" aria-label="Job submission (1 item)">Job submission<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/jupyter-notebook/" class="tag-cloud-link tag-link-18 tag-link-position-5" style="font-size: 8pt;" aria-label="Jupyter notebook (1 item)">Jupyter notebook<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/parallelization/" class="tag-cloud-link tag-link-9 tag-link-position-6" style="font-size: 22pt;" aria-label="Parallelization (5 items)">Parallelization<span class="tag-link-count"> (5)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/python/" class="tag-cloud-link tag-link-19 tag-link-position-7" style="font-size: 22pt;" aria-label="Python (5 items)">Python<span class="tag-link-count"> (5)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/scalability/" class="tag-cloud-link tag-link-20 tag-link-position-8" style="font-size: 8pt;" aria-label="Scalability (1 item)">Scalability<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/scaling/" class="tag-cloud-link tag-link-8 tag-link-position-9" style="font-size: 8pt;" aria-label="Scaling (1 item)">Scaling<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/slurm/" class="tag-cloud-link tag-link-10 tag-link-position-10" style="font-size: 13.25pt;" aria-label="SLURM (2 items)">SLURM<span class="tag-link-count"> (2)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/supercomputer/" class="tag-cloud-link tag-link-23 tag-link-position-11" style="font-size: 8pt;" aria-label="Supercomputer (1 item)">Supercomputer<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/virtual-environment/" class="tag-cloud-link tag-link-24 tag-link-position-12" style="font-size: 8pt;" aria-label="Virtual environment (1 item)">Virtual environment<span class="tag-link-count"> (1)</span></a>
+<a href="https://www.kth.se/blogs/pdc/tag/virtual-machine/" class="tag-cloud-link tag-link-17 tag-link-position-13" style="font-size: 8pt;" aria-label="Virtual machine (1 item)">Virtual machine<span class="tag-link-count"> (1)</span></a></div>
+</aside><aside id="kth_subscribe_widget-2" class="widget widget_kth_subscribe_widget"><h2 class="sidebar-widget-title">Subscribe to the Blog</h2><form action="https://www.kth.se/blogs/pdc/" method="post" class="subscribe-widget">
+                <input type="hidden" name="action" value="subscribe">
+                <input type="hidden" name="source" value="https://www.kth.se/blogs/pdc">
+                <input type="hidden" name="sub-type" value="widget">
+                
+                <label for="subscribe-email">E-mail</label>
+                <input type="email" id="subscribe-email" name="email" class="kth-widget-input ui-input" style="padding: 6px 8px;" required>
+                
+                <button type="submit" class="ui-button full-width" style="font-weight: bold;">Subscribe</button>
+            </form></aside>    </aside>    </aside>
+
+</div>
+
+
+</div><!-- .site-content -->
+
+<footer id="colophon" class="kth-footer external">
+    <aside id="content-bottom-widgets" class="kth-footer__content" role="complementary">
+        
+
+
+
+
+  <div class="columnSplitterWrapper" data-cid="1.202278" lang="en">
+    
+    <div class="columnSplitter  using4Columns ">
+      <div class="col c1">
+        
+
+
+
+
+  <div class="block list links defaultTheme" data-cid="1.202279" lang="en">
+    <h2>KTH</h2>
+    
+    <ul>
+      <li><a href="/en/studies">Study at KTH</a></li>
+      <li><a href="/en/forskning">Research</a></li>
+      <li><a href="/en/samverkan">Cooperation</a></li>
+      <li><a href="/en/om">About KTH</a></li>
+      <li><a href="https://www.kth.se/en/student">Student at KTH</a></li>
+      <li><a href="/en/alumni">Alumni</a></li>
+      <li><a href="https://intra.kth.se/en">KTH Intranet</a></li>
+    </ul>
+  </div>
+
+
+
+      </div>
+      <div class="col c2">
+        
+
+
+
+
+  <div class="block list links defaultTheme" data-cid="1.202289" lang="en">
+    <h2>Organisation</h2>
+    
+    <ul>
+      <li><a hreflang="en-GB" href="https://www.kth.se/en/biblioteket">KTH Library</a></li>
+      <li><a hreflang="en-GB" href="https://www.kth.se/en/om/organisation/kth-s-skolor-1.1071092">KTH Schools</a></li>
+      <li><a hreflang="en-GB" href="https://www.kth.se/en/forskning/sarskilda-forskningssatsningar/kompetenscentra">Competence centres</a></li>
+      <li><a hreflang="en-GB" href="https://www.kth.se/en/om/organisation/rektor-och-ledning">President and management</a></li>
+      <li><a hreflang="en-GB" href="https://www.kth.se/en/om/organisation/vs-1.887371">University Administration</a></li>
+    </ul>
+  </div>
+
+
+
+      </div>
+      <div class="col c3">
+        
+
+
+
+
+  <div class="block list links defaultTheme" data-cid="1.202317" lang="en">
+    <h2>Services</h2>
+    
+    <ul>
+      <li><a hreflang="en-GB" href="https://www.kth.se/en/student/studier/schema">Timetables</a></li>
+      <li><a href="https://www.kth.se/student/kurser/kurser-inom-program?l=en"> Course and programme directory</a></li>
+      <li><a href="https://webmail.kth.se">Webmail</a></li>
+      <li><a href="https://canvas.kth.se">Learning management system (Canvas)</a></li>
+    </ul>
+  </div>
+
+
+
+      </div>
+      <div class="col c4">
+        
+
+
+
+
+  <article class="block teaser top white" data-cid="1.865130" lang="en">
+    
+    <div class="teaserBody   ">
+      
+      <h2 class="teaserHeading">
+        Contact
+      </h2>
+      <div class="lead">
+        
+        
+      
+        
+        <p><strong>KTH Royal Institute of Technology</strong><br> <em>SE-100 44 Stockholm<br> Sweden<br> +46 8 790 60 00</em></p>
+      
+    
+      </div>
+      
+    </div>
+  </article>
+
+
+
+        
+
+
+
+
+  <div class="block list links defaultTheme" data-cid="1.582032" lang="en">
+    
+    
+    <ul>
+      <li><a href="/en/om/kontakt">Contact KTH</a></li>
+      <li><a href="/en/om/jobba-pa-kth">Work at KTH</a></li>
+      <li><a hreflang="en-GB" href="https://www.kth.se/en/om/press">Press and media</a></li>
+      <li><a href="/en/gemensamt">About KTH website</a></li>
+    </ul>
+  </div>
+
+
+
+      </div>
+    </div>
+  </div>
+
+
+    </aside>
+
+    <div class="footer-navigation">
+            </div>
+</footer>
+
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/blogs/pdc/*"},{"not":{"href_matches":["/blogs/pdc/wp-*.php","/blogs/pdc/wp-admin/*","/blogs/pdc/files/*","/blogs/pdc/wp-content/*","/blogs/pdc/wp-content/plugins/*","/blogs/pdc/wp-content/themes/kth-blog-theme-2025/*","/blogs/pdc/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script id="kth-mobile-menu-js" src="https://www.kth.se/blogs/pdc/wp-content/themes/kth-blog-theme-2025/design-system/js/mobile-menu.js?ver=1.8.0"></script>
+<script id="kth-dynamic-heading-classes-js" src="https://www.kth.se/blogs/pdc/wp-content/themes/kth-blog-theme-2025/assets/js/dynamic-heading-classes.js"></script>
+<script id="wp-emoji-settings" type="application/json">
+{"baseUrl":"https://s.w.org/images/core/emoji/17.0.2/72x72/","ext":".png","svgUrl":"https://s.w.org/images/core/emoji/17.0.2/svg/","svgExt":".svg","source":{"concatemoji":"https://www.kth.se/blogs/pdc/wp-includes/js/wp-emoji-release.min.js?ver=7.1"}}
+</script>
+<script type="module">
+/*! This file is auto-generated */
+var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof HTMLScriptElement))throw new Error("Element missing: "+e);const r=JSON.parse(t.text),s=(window._wpemojiSettings=r,"wpEmojiSettingsSupports"),o=["flag","emoji"];function i(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(s,JSON.stringify(t))}catch(e){}}function c(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0);const r=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);return t.every((e,t)=>e===r[t])}function p(e,t){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var n=e.getImageData(16,16,1,1);for(let e=0;e<n.data.length;e++)if(0!==n.data[e])return!1;return!0}function u(e,t,n,r){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\udde8\ud83c\uddf6","\ud83c\udde8\u200b\ud83c\uddf6")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!r(e,"\ud83e\u1fac8")}return!1}function f(e,t,n,r){let a;const s=(a="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):document.createElement("canvas")).getContext("2d",{willReadFrequently:!0}),o=(s.textBaseline="top",s.font="600 32px Arial",{});return e.forEach(e=>{o[e]=t(s,e,n,r)}),o}function a(e){var t=document.createElement("script");t.src=e,t.defer=!0,document.head.appendChild(t)}r.supports={everything:!0,everythingExceptFlag:!0},new Promise(t=>{let n=function(){try{var e=JSON.parse(sessionStorage.getItem(s));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(o),u.toString(),c.toString(),p.toString()].join(",")+"));",r=new Blob([e],{type:"text/javascript"});const a=new Worker(URL.createObjectURL(r),{name:"wpTestEmojiSupports"});return void(a.onmessage=e=>{i(n=e.data),a.terminate(),t(n)})}catch(e){}i(n=f(o,u,c,p))}t(n)}).then(e=>{for(const n in e)r.supports[n]=e[n],r.supports.everything=r.supports.everything&&r.supports[n],"flag"!==n&&(r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&r.supports[n]);var t;r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&!r.supports.flag,r.supports.everything||((t=r.source||{}).concatemoji?a(t.concatemoji):t.wpemoji&&t.twemoji&&(a(t.twemoji),a(t.wpemoji)))});
+//# sourceURL=https://www.kth.se/blogs/pdc/wp-includes/js/wp-emoji-loader.min.js
+</script>
+</body>
+</html>
