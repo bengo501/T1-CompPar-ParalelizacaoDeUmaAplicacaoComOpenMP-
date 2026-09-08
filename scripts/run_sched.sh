@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # compara politicas de escalonamento em 12 threads e imprime a distribuicao
 # de carga por thread para cada uma. gera:
-#   results/sched.csv       linhas csv com tempo por politica (3 repeticoes)
+#   results/sched.csv       linhas csv com tempo por politica (10 repeticoes)
 #   results/balance.csv     tempo e iteracoes por thread por politica (1 amostra)
 set -eu
 cd "$(dirname "$0")/.."

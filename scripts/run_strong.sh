@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # escalabilidade forte: tamanho fixo, threads crescente na serie
 # 1, 2, 4, 6, 8, 10, 12 (12 = num de threads logicas do ryzen 5 3600).
-# 3 repeticoes por ponto. o ponto de 1 thread e o binario sequencial
+# 10 repeticoes por ponto. o ponto de 1 thread e o binario sequencial
 # (compilado sem -fopenmp), nao o omp com OMP_NUM_THREADS=1.
 set -eu
 cd "$(dirname "$0")/.."

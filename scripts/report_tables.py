@@ -93,9 +93,9 @@ def sched_table():
             g.setdefault(k, []).append(float(row["time_s"]))
     order = ["static", "static_32", "static_4", "dynamic", "dynamic_32",
              "dynamic_4", "guided"]
-    pretty = {"static": "static (adotada)", "static_32": "static, 32",
+    pretty = {"static": "static", "static_32": "static, 32",
               "static_4": "static, 4", "dynamic": "dynamic",
-              "dynamic_32": "dynamic, 32", "dynamic_4": "dynamic, 4",
+              "dynamic_32": "dynamic, 32", "dynamic_4": "dynamic, 4 (adotada)",
               "guided": "guided"}
     print()
     print("% tabela 3: politicas de scheduling em 12 threads")

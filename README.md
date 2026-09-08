@@ -33,7 +33,7 @@ bash scripts/profile.sh          # perfil com gprof (~30s)
 bash scripts/run_sched.sh        # 7 politicas de scheduling em 12 threads (10 reps)
 bash scripts/run_strong.sh       # escalabilidade forte, 1..12 threads (10 reps)
 bash scripts/run_weak.sh         # escalabilidade fraca, 1..12 threads (10 reps)
-bash scripts/summarize_balance.sh
+bash scripts/resume_weak.sh     # continua weak.csv sem apagar o que ja rodou
 ```
 
 parametros ajustaveis pelas variaveis `W`, `H`, `SPP`, `REPS`, `THREADS`,
@@ -103,8 +103,8 @@ scripts/
   run_strong.sh      escalabilidade forte
   run_weak.sh        escalabilidade fraca
   balance_only.sh    so as amostras de --profile-balance
-  summarize_balance.sh
-  plot.py            graficos matplotlib
+  resume_weak.sh     continua weak.csv sem apagar linhas ja medidas
+  run_all.sh         dispara perfil, sched, forte e fraca em sequencia
 results/
   perfil.md          fracao paralelizavel + teto de amdahl
   otimizacoes.md     decisoes de escopo e clausulas

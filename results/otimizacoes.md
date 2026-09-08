@@ -9,7 +9,7 @@ referência de arquivo: [src/smallpt.c](../src/smallpt.c)
         shared(a, c, cam_o, cam_d, cx, cy, stat, threads_used)
 {
     ...
-    #pragma omp for schedule(runtime)
+    #pragma omp for schedule(runtime) nowait
     for (int y = 0; y < a.h; ++y) { ... }
 }
 ```

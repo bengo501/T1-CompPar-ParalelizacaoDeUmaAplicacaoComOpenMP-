@@ -29,7 +29,7 @@
 % cabecalho reduzido: sem capa. identificacao do grupo e do trabalho.
 \begin{center}
   {\large\bfseries T1 -- Paralelizacao de uma aplicacao com OpenMP} \\[2pt]
-  {\small Computacao Paralela -- Unidade 03 \quad|\quad Grupo: NOMES DOS INTEGRANTES} \\[1pt]
+  {\small Computacao Paralela -- Unidade 03 \quad|\quad Aluno: Bernardo Klein Heitz} \\[1pt]
   {\footnotesize Codigo entregue em .zip junto deste PDF.}
 \end{center}
 
@@ -41,10 +41,9 @@ Kevin Beason, reescrito em C. O programa renderiza uma Cornell Box com nove
 esferas (paredes difusas, uma esfera especular e uma refrativa) usando
 Monte Carlo com amostragem estratificada 2$\times$2 por pixel e roleta russa a
 partir da profundidade 5. A escolha atende os quatro criterios do enunciado:
-tempo sequencial acima de 30\,s com a entrada calibrada, um laco externo
-independente por linha, complexidade nao trivial (multiplos tipos de material
-e recursao de reflexoes) e entrada totalmente parametrizavel por
-\texttt{-w W -h H -s SPP}.
+tempo sequencial na janela de 30 a 60\,s, um laco externo independente por
+linha, complexidade nao trivial (materiais e reflexoes) e entrada
+parametrizavel por \texttt{-w W -h H -s SPP}.
 
 \section*{2. Ambiente e metodologia}
 CPU: AMD Ryzen 5 3600 (6 nucleos fisicos, 12 processadores logicos,
@@ -52,46 +51,37 @@ CPU: AMD Ryzen 5 3600 (6 nucleos fisicos, 12 processadores logicos,
 em WSL2 sobre Windows 10. Compilador: \texttt{gcc 11.4.0}. Flags identicas
 nas duas versoes: \texttt{-O3 -march=native -ffast-math -std=c11}; a
 versao paralela acrescenta apenas \texttt{-fopenmp}.
+\texttt{omp\_get\_num\_procs()} devolve 12, igual a \texttt{nproc}.
 \textbf{Regiao medida:} \texttt{omp\_get\_wtime()} envolve a fase
 computacional completa -- setup da camera, alocacao do buffer, laco de
-renderizacao e calculo do checksum. Apenas a escrita PPM opcional e o
-print do CSV ficam fora; os mesmos limites valem para o binario
-sequencial e o paralelo. Como medida complementar, o tempo isolado do
-trecho paralelizado tambem e reportado (\texttt{time\_par\_s} nos CSVs).
-\textbf{Entrada de referencia:} \texttt{w=800 h=600 spp=32}, calibrada
-para $T_1 \approx 56$\,s na maquina de teste, dentro da janela de 30 a
-60\,s pedida pelo enunciado. \textbf{Protocolo de repeticao:} cada
-configuracao foi executada 10 vezes com a maquina ociosa; as tabelas
-reportam mediana, min e max. \textbf{Fixacao de threads:} via variavel
-de ambiente \texttt{OMP\_NUM\_THREADS}. \textbf{Validacao:} um checksum
-por soma dos canais RGB de todos os pixels bate byte a byte entre 1 e
-12 threads e entre todas as politicas de escalonamento, o que garante
-resultado equivalente entre as versoes.
+renderizacao e checksum. A escrita PPM e o print do CSV ficam fora; os
+mesmos limites valem nas duas versoes. O tempo isolado do trecho
+paralelizado e reportado em \texttt{time\_par\_s} como medida complementar.
+\textbf{Entrada de referencia:} \texttt{w=800 h=600 spp=32}, com
+$T_1 \approx 54$\,s. \textbf{Protocolo:} 10 execucoes por configuracao,
+maquina ociosa; tabelas com mediana, min e max. \textbf{Threads:}
+\texttt{OMP\_NUM\_THREADS}. \textbf{Validacao:} checksum RGB identico entre
+1 e 12 threads e entre todas as politicas de escalonamento.
 
 \section*{3. Perfil e teto de Amdahl}
-O perfil com \texttt{gprof} (binario \texttt{-O2 -fno-inline -pg}) sobre
-a mesma fase computacional usada na medicao mostra \texttt{radiance} e
-suas chamadas (\texttt{sphere\_intersect}, operacoes de vetor,
-\texttt{rng\_next}) somando 97{,}9\% do tempo; o restante (setup da
-camera, alocacao do buffer, calculo do checksum) fica em torno de 2{,}1\%
-e representa a parcela intrinsecamente sequencial dentro dos limites
-medidos. A fracao paralelizavel medida e $f \ge 0{,}98$. Com $f=0{,}98$
-os limites de Amdahl sao $S_{\max}(6) \approx 5{,}31$,
-$S_{\max}(12) \approx 9{,}83$ e $S_{\max}(\infty) = 50$. Com $f=0{,}99$
-sobem para $5{,}66$, $10{,}81$ e $100$, respectivamente. A comparacao
-entre esses limites e o speed-up observado (Secao~6) e o que permite
-separar o efeito da fracao sequencial dos demais fatores de saturacao.
+O \texttt{gprof} foi levantado na mesma entrada e na mesma fase do
+speed-up (binario \texttt{-O2 -fno-inline -pg}). \texttt{radiance} e
+suas chamadas somam 98{,}2\% do tempo; \texttt{main} fica com 1{,}75\%.
+A fracao paralelizavel e $f \approx 0{,}982$. Os limites de Amdahl sao
+$S_{\max}(6) \approx 5{,}51$, $S_{\max}(12) \approx 10{,}00$ e o limite
+assintotico $S_{\infty}=1/(1-f)\approx 55{,}6$. No binario \texttt{-O3},
+\texttt{time\_par\_s}/\texttt{time\_s} da versao sequencial e $0{,}99998$:
+a parcela sequencial da fase medida e desprezivel. A saturacao da
+Secao~6 fica abaixo de $S_{\max}(12)$, logo nao se deve a essa fracao.
 
 \section*{4. Modelagem e diretivas}
-A unidade de trabalho e uma linha da imagem (\texttt{a.w} pixels). O laco
-externo em \texttt{y} tem 600 iteracoes com 12 threads, e cada iteracao
-escreve numa faixa disjunta do buffer \texttt{c}, o que dispensa \texttt{atomic},
-\texttt{critical} e \texttt{reduction} no caminho quente. O gerador
-xorshift64 e declarado dentro do corpo do laco (privado por construcao) e
-recebe uma semente derivada da linha (\texttt{seed \(\oplus\) y·0x9E37\dots}),
-o que garante checksum identico em 1, 4 e 12 threads.
+A unidade de trabalho e uma linha da imagem. O laco em \texttt{y} tem
+600 iteracoes; cada uma escreve numa faixa disjunta de \texttt{c}, o que
+dispensa \texttt{atomic}, \texttt{critical} e \texttt{reduction} no caminho
+quente. O gerador xorshift64 e local ao corpo do laco e recebe semente
+derivada da linha, o que torna o checksum independente do numero de threads.
 
-Os pragmas essenciais estao em \texttt{src/smallpt.c:275--295}:
+Os pragmas essenciais estao em \texttt{src/smallpt.c:319--331}:
 \begin{quote}\small\ttfamily
 \#pragma omp parallel default(none) \\
 \quad shared(a, c, cam\_o, cam\_d, cx, cy, stat, threads\_used) \\
@@ -100,51 +90,34 @@ Os pragmas essenciais estao em \texttt{src/smallpt.c:275--295}:
 \quad for (int y = 0; y < a.h; ++y) \{ ... \} \\
 \}
 \end{quote}
-O \texttt{default(none)} obriga listar o escopo explicitamente. Todas as
-variaveis compartilhadas sao apenas de leitura, exceto \texttt{c} (escrita
-disjunta) e \texttt{stat} (indexado por \texttt{omp\_get\_thread\_num()},
-com padding de 64\,B para evitar \emph{false sharing} entre threads
-adjacentes). O \texttt{schedule(runtime)} permite trocar de politica pela
-variavel \texttt{OMP\_SCHEDULE} sem recompilar; o \texttt{nowait} faz o
-perfil por thread refletir o trabalho real, e nao o momento em que a
-ultima thread chega a barreira.
+O \texttt{default(none)} obriga listar o escopo. \texttt{c} tem escrita
+disjunta; \texttt{stat} e indexado por \texttt{omp\_get\_thread\_num()}
+com padding de 64\,B. \texttt{schedule(runtime)} troca a politica por
+\texttt{OMP\_SCHEDULE}; \texttt{nowait} faz o perfil por thread refletir
+o trabalho real, nao a barreira.
 
 \section*{5. Balanceamento medido}
-Comparamos sete politicas em 12 threads com 10 execucoes cada
-(Tabela\,\ref{tab:sched}). \texttt{dynamic,4} teve a menor mediana
-(7{,}16\,s) e a menor dispersao (amostras entre 7{,}01 e 7{,}35\,s),
-seguido por \texttt{dynamic,32} (7{,}20\,s) e \texttt{guided} (7{,}23\,s).
-\texttt{static} sem chunk ficou em ultimo (9{,}56\,s de mediana), com
-amostras que vao de 7{,}57 ate 11{,}78\,s -- uma dispersao muito grande
-para uma carga que, medida pelo perfil interno por thread com
-\texttt{nowait}, mostra desbalanceamento inferior a 1\% em todas as
-politicas.
-A leitura do dado e importante: a variancia da carga por linha (raios que
-atingem o vidro e o espelho fazem mais reflexoes) e diluida por blocos
-contiguos de 50 linhas, entao o desbalanceamento intrinseco nao explica
-sozinho o mau desempenho do static. A causa provavel e ambiental:
-executando em WSL2, threads sao preemptadas ocasionalmente pelo host, e
-em \texttt{static} sem chunk uma thread atrasada bloqueia o programa
-inteiro. \texttt{dynamic,4} absorve esses atrasos porque threads livres
-continuam pegando blocos ate a fila esvaziar. Adotamos \texttt{dynamic,4}
-nas escalabilidades por essa razao empirica.
+Sete politicas em 12 threads, 10 execucoes cada (Tabela\,\ref{tab:sched}).
+\texttt{dynamic,4} teve a menor mediana (7{,}16\,s) e a menor dispersao
+(7{,}01 a 7{,}35\,s). \texttt{static} sem chunk ficou em ultimo
+(9{,}56\,s), com amostras de 7{,}57 a 11{,}78\,s, embora o perfil
+interno com \texttt{nowait} mostre desbalanceamento inferior a 1\%.
+A variancia por profundidade de raio nao explica esse gap: em WSL2 uma
+thread preemptada no \texttt{static} trava o programa, enquanto
+\texttt{dynamic,4} redistribui blocos. Adotamos \texttt{dynamic,4} por
+essa medicao.
 
 \section*{6. Analise dos resultados}
-A Figura\,\ref{fig:speedup} mostra a escalabilidade forte. O speed-up e
-praticamente linear ate 6 threads (5{,}00 medidos contra 5{,}31 do teto de
-Amdahl a 6, eficiencia de 83{,}3\%). No ponto onde o SMT entra --
-marcado com a linha vertical em 6 threads -- a curva se dobra: de 6 para 8
-threads o ganho vai de 5{,}00 para 6{,}24 (+25\%), mas a eficiencia cai de
-83{,}3\% para 78{,}0\%; de 10 para 12 threads o ganho adicional e apenas
-6\% e a eficiencia despenca para 61{,}8\%. Isso e o comportamento canonico
-do SMT em cargas compute-bound: duas threads que compartilham o mesmo
-nucleo fisico competem pelas unidades de ponto flutuante, e como o
-\texttt{smallpt} passa a maior parte do tempo em multiplicacoes e raizes
-quadradas de doubles, a segunda thread pouco esconde de latencia -- ela
-concorre pelo mesmo recurso ocupado. O speed-up final de 7{,}41 em 12
-threads e coerente com esse quadro e ainda esta bem abaixo do teto de
-Amdahl (9{,}83), o que significa que a fracao sequencial nao explica
-sozinha a saturacao; a competicao SMT e o fator dominante.
+A Figura\,\ref{fig:speedup} e a Tabela\,\ref{tab:strong} mostram a
+escalabilidade forte. Ate 6 threads o speed-up acompanha Amdahl
+(4{,}93 medidos contra 5{,}51, eficiencia 82{,}2\%). No ponto em que o
+SMT entra (linha vertical em 6 threads) a curva se dobra: de 6 para 8 o
+ganho vai a 6{,}14 (+25\%) e a eficiencia cai a 76{,}8\%; de 10 para 12
+o ganho adicional e 1{,}8\% e a eficiencia cai a 62{,}0\%. O
+\texttt{smallpt} e compute-bound em \texttt{double}; duas threads no
+mesmo nucleo competem pelas unidades de ponto flutuante. O speed-up
+7{,}44 em 12 threads fica abaixo de $S_{\max}(12)\approx 10$, portanto
+a saturacao e SMT (e preempcao do WSL2), nao a fracao sequencial.
 
 \begin{center}
   \includegraphics[width=\linewidth]{../results/speedup.pdf}
@@ -154,37 +127,36 @@ sozinha a saturacao; a competicao SMT e o fator dominante.
   \label{fig:speedup}
 \end{center}
 
-A escalabilidade fraca (Figura\,\ref{fig:eff}, curva laranja; Tabela\,\ref{tab:weak})
-foi construida fixando $w$ e $h$ e escalando \texttt{spp} proporcional a
-$p$. A justificativa e direta: o custo do renderer e $O(w \cdot h \cdot \text{spp})$,
-linear em cada fator; manter \texttt{spp/p} constante mantem o trabalho
-por thread constante. A eficiencia fraca decai mais lentamente que a
-forte a partir de 8 threads (64{,}0\% vs.\ 61{,}8\% em 12) porque, na
-fraca, o crescimento do trabalho por thread nao dilui apenas o overhead:
-tambem satura melhor o \emph{front-end} do nucleo, deixando o SMT ganhar
-alguma sobreposicao que nao existia na forte. Ambas as curvas cruzam a
-linha do SMT com o mesmo joelho, o que confirma que a fonte da queda esta
-no hardware, nao no algoritmo.
+A escalabilidade fraca (Figura\,\ref{fig:eff}, Tabela\,\ref{tab:weak})
+fixa $w$ e $h$ e escala $\mathrm{spp}=32\cdot p$, porque o custo e
+$O(w\cdot h\cdot\mathrm{spp})$. Ate 4 threads a curva e quase horizontal
+(55{,}6, 56{,}4 e 58{,}6\,s). Em 6 threads sobe a 67{,}7\,s (82{,}2\%,
+igual a da forte). Passado o SMT a fraca piora mais que a forte:
+91{,}3\,s em 8 threads e 124{,}1\,s em 12 (44{,}8\% contra 62{,}0\%).
+Com trabalho por thread constante, 12 threads em 6 nucleos colocam duas
+cargas completas no mesmo nucleo; o tempo deveria se aproximar de
+$2\times 67{,}7\approx 135$\,s e medimos 124\,s -- o SMT recupera
+cerca de 8\%. Na forte o trabalho total e fixo, entao o SMT ainda reduz
+10{,}9\,s para 7{,}3\,s. As duas curvas quebram no mesmo ponto do
+grafico: a fonte e a topologia, nao o algoritmo.
 
-Sobre eficiencia: numa maquina que ja temos, uma eficiencia de 62\% em 12
-threads nao e um problema; um render que levava 56\,s passa a levar
-7{,}6\,s, um retorno concreto. Se pagassemos por nucleo, a decisao seria
-outra -- a eficiencia por nucleo desaba entre 6 e 12 threads e nao
-justificaria o custo do SMT.
+Sobre eficiencia: numa maquina que ja temos, 62\% em 12 threads nao e
+um problema; $T_1\approx 54$\,s cai a $\approx 7{,}3$\,s. Se pagassemos
+por nucleo, a queda entre 6 e 12 threads nao justificaria o SMT.
 
 \begin{center}
   \includegraphics[width=\linewidth]{../results/efficiency.pdf}
-  \captionof{figure}{Eficiencia das duas escalabilidades. Ambas caem no
-    ponto do SMT; a fraca sustenta-se melhor a partir de 8 threads.}
+  \captionof{figure}{Eficiencia das duas escalabilidades. As duas curvas
+    quebram ao entrar no SMT; a partir de 8 threads a fraca cai mais,
+    porque cada nucleo passa a receber duas cargas completas.}
   \label{fig:eff}
 \end{center}
 
 \section*{7. Uso de ferramentas de IA}
 Usamos um assistente de IA para revisar o arnes de medicao, o script de
 plotagem e a estrutura do relatorio. Cada decisao de codigo (escopo das
-clausulas, escolha de \texttt{static}, rng por linha, ativacao de
-\texttt{nowait} no laco) foi verificada com as medicoes descritas acima e
-pode ser reproduzida com os comandos do \texttt{README.md}.
+clausulas, escolha de \texttt{dynamic,4}, rng por linha, \texttt{nowait})
+foi verificada com as medicoes acima e reproduz-se com o \texttt{README.md}.
 
 \end{multicols}
 
@@ -198,14 +170,13 @@ pode ser reproduzida com os comandos do \texttt{README.md}.
     \toprule
     Threads & Med.\ (s) & Min (s) & Max (s) & Speed-up & Ef. \\
     \midrule
-    % {{TAB1_STRONG}}
-    1 ($T_1$) & TBD & TBD & TBD & 1{,}000 & 100{,}0\% \\
-    2  & TBD & TBD & TBD & TBD & TBD \\
-    4  & TBD & TBD & TBD & TBD & TBD \\
-    6  & TBD & TBD & TBD & TBD & TBD \\
-    8  & TBD & TBD & TBD & TBD & TBD \\
-    10 & TBD & TBD & TBD & TBD & TBD \\
-    12 & TBD & TBD & TBD & TBD & TBD \\
+    1 ($T_1$) & 53{,}996 & 53{,}552 & 56{,}206 & 1{,}000 & 100{,}0\% \\
+    2  & 28{,}437 & 28{,}126 & 30{,}418 & 1{,}899 & 94{,}9\% \\
+    4  & 16{,}300 & 15{,}307 & 16{,}929 & 3{,}313 & 82{,}8\% \\
+    6  & 10{,}945 & 10{,}512 & 12{,}057 & 4{,}933 & 82{,}2\% \\
+    8  &  8{,}789 &  8{,}349 &  9{,}032 & 6{,}144 & 76{,}8\% \\
+    10 &  7{,}395 &  6{,}991 &  7{,}672 & 7{,}302 & 73{,}0\% \\
+    12 &  7{,}261 &  6{,}456 &  7{,}846 & 7{,}437 & 62{,}0\% \\
     \bottomrule
   \end{tabular}
 \end{center}
@@ -220,14 +191,13 @@ pode ser reproduzida com os comandos do \texttt{README.md}.
     \toprule
     Threads & spp & Med.\ (s) & Min (s) & Max (s) & Ef. \\
     \midrule
-    % {{TAB2_WEAK}}
-    1 ($T_1$) &  32 & TBD & TBD & TBD & 100{,}0\% \\
-    2  &  64 & TBD & TBD & TBD & TBD \\
-    4  & 128 & TBD & TBD & TBD & TBD \\
-    6  & 192 & TBD & TBD & TBD & TBD \\
-    8  & 256 & TBD & TBD & TBD & TBD \\
-    10 & 320 & TBD & TBD & TBD & TBD \\
-    12 & 384 & TBD & TBD & TBD & TBD \\
+    1 ($T_1$) &  32 & 55{,}643 & 54{,}551 & 57{,}554 & 100{,}0\% \\
+    2  &  64 & 56{,}432 & 55{,}605 & 59{,}526 & 98{,}6\% \\
+    4  & 128 & 58{,}578 & 57{,}927 & 59{,}572 & 95{,}0\% \\
+    6  & 192 & 67{,}730 & 60{,}617 & 73{,}468 & 82{,}2\% \\
+    8  & 256 & 91{,}290 & 76{,}362 & 102{,}594 & 61{,}0\% \\
+    10 & 320 & 108{,}754 & 107{,}091 & 110{,}528 & 51{,}2\% \\
+    12 & 384 & 124{,}098 & 123{,}328 & 125{,}584 & 44{,}8\% \\
     \bottomrule
   \end{tabular}
 \end{center}
@@ -242,14 +212,13 @@ pode ser reproduzida com os comandos do \texttt{README.md}.
     \toprule
     Politica & Mediana (s) & Min (s) & Max (s) \\
     \midrule
-    % {{TAB3_SCHED}}
-    static (adotada) & TBD & TBD & TBD \\
-    static, 32       & TBD & TBD & TBD \\
-    static, 4        & TBD & TBD & TBD \\
-    dynamic          & TBD & TBD & TBD \\
-    dynamic, 32      & TBD & TBD & TBD \\
-    dynamic, 4       & TBD & TBD & TBD \\
-    guided           & TBD & TBD & TBD \\
+    static               & 9{,}556 & 7{,}573 & 11{,}779 \\
+    static, 32           & 8{,}389 & 7{,}425 & 10{,}494 \\
+    static, 4            & 7{,}658 & 7{,}259 &  8{,}287 \\
+    dynamic              & 7{,}297 & 7{,}210 &  7{,}933 \\
+    dynamic, 32          & 7{,}199 & 7{,}157 &  7{,}608 \\
+    dynamic, 4 (adotada) & 7{,}164 & 7{,}006 &  7{,}354 \\
+    guided               & 7{,}231 & 6{,}935 &  7{,}385 \\
     \bottomrule
   \end{tabular}
 \end{center}

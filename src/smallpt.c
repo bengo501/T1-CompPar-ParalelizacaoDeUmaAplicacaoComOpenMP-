@@ -273,12 +273,15 @@ int main(int argc, char** argv) {
 #ifdef _OPENMP
     if (a.threads > 0) omp_set_num_threads(a.threads);
     int threads_used = 0;
+    int nprocs = omp_get_num_procs();
     #pragma omp parallel
     { if (omp_get_thread_num() == 0) threads_used = omp_get_num_threads(); }
     if (a.sched) setenv("OMP_SCHEDULE", a.sched, 1);
 #else
     int threads_used = 1;
+    int nprocs = 1;
 #endif
+    fprintf(stderr, "nprocs=%d threads_used=%d\n", nprocs, threads_used);
 
     // perfil por thread com padding para evitar false sharing quando threads
     // adjacentes gravam contadores adjacentes. este vetor e usado apenas para

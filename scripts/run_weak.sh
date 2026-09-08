@@ -5,7 +5,7 @@
 # assim o trabalho total escala como p, e cada thread recebe sempre spp_base
 # amostras por subpixel do bloco de linhas que lhe cabe.
 #
-# base spp = 8 => T1 ~= 14s
+# base spp = 32 (mesma entrada da escalabilidade forte).
 set -eu
 cd "$(dirname "$0")/.."
 

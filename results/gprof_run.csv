@@ -1,2 +1,2 @@
 version,label,threads,schedule,w,h,spp,time_s,time_par_s,checksum
-csv,prof,1,default,320,240,8,17.785815,17.785640,44213.977716
+csv,prof,1,default,800,600,32,554.795760,554.791025,320908.133583

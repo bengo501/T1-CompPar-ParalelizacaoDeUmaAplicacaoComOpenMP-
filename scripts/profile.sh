@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# roda o binario -pg em uma entrada reduzida (para o gprof nao demorar
-# demais) e gera results/gprof.txt e results/gprof_flat.csv.
+# roda o binario -pg na mesma entrada de referencia do speed-up
+# (w=800 h=600 spp=32) e gera results/gprof.txt e results/gprof_flat.csv.
 # a fracao paralelizavel e a soma do tempo em radiance() e nas funcoes
-# chamadas por ela (v_norm, sphere_intersect, rng_next, ...): essencialmente
-# tudo o que ocorre dentro do laco em y.
+# chamadas por ela: essencialmente tudo o que ocorre dentro do laco em y.
 set -eu
 cd "$(dirname "$0")/.."
 
 make prof >/dev/null
 
-W=${W:-320}
-H=${H:-240}
-SPP=${SPP:-8}
+# mesma fase e mesma entrada de referencia usadas no speed-up (secao 5).
+W=${W:-800}
+H=${H:-600}
+SPP=${SPP:-32}
 OUT_DIR=results
 mkdir -p "$OUT_DIR"
 
