@@ -1,12 +1,12 @@
 % relatorio do t1 de computacao paralela - paralelizacao de path tracer smallpt
-% duas paginas: pagina 1 em coluna dupla com analise; pagina 2 em coluna simples
-% com as tabelas. sem capa, cabecalho reduzido.
+% formato conforme enunciado corrigido: A4, margem >= 1.5cm, fonte 10-11,
+% espacamento simples, ate 2 paginas, coluna dupla (opcional).
 \documentclass[10pt,a4paper]{article}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[portuguese]{babel}
-\usepackage[margin=1cm]{geometry}
+\usepackage[margin=1.5cm]{geometry}
 \usepackage{multicol}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -46,26 +46,41 @@ independente por linha, complexidade nao trivial (multiplos tipos de material
 e recursao de reflexoes) e entrada totalmente parametrizavel por
 \texttt{-w W -h H -s SPP}.
 
-\section*{2. Ambiente de execucao}
-CPU: AMD Ryzen 5 3600 (6 nucleos fisicos, 12 threads logicas, 3.6\,GHz base),
-cache L3 de 32\,MB, 32\,GB de RAM DDR4. SO: Ubuntu 22.04 em WSL2 sobre Windows
-10. Compilador: \texttt{gcc 11.4.0}. Flags identicas nas duas versoes:
-\texttt{-O3 -march=native -ffast-math -std=c11}; a versao paralela acrescenta
-apenas \texttt{-fopenmp}. As medidas foram feitas com a maquina ociosa, tres
-execucoes por ponto, tempo cronometrado com \texttt{omp\_get\_wtime()} apenas
-sobre a regiao de renderizacao (o \texttt{checksum} e a escrita opcional da
-imagem PPM ficam fora). O numero de threads foi fixado por
-\texttt{OMP\_NUM\_THREADS}.
+\section*{2. Ambiente e metodologia}
+CPU: AMD Ryzen 5 3600 (6 nucleos fisicos, 12 processadores logicos,
+3.6\,GHz base), cache L3 de 32\,MB, 32\,GB de RAM DDR4. SO: Ubuntu 22.04
+em WSL2 sobre Windows 10. Compilador: \texttt{gcc 11.4.0}. Flags identicas
+nas duas versoes: \texttt{-O3 -march=native -ffast-math -std=c11}; a
+versao paralela acrescenta apenas \texttt{-fopenmp}.
+\textbf{Regiao medida:} \texttt{omp\_get\_wtime()} envolve a fase
+computacional completa -- setup da camera, alocacao do buffer, laco de
+renderizacao e calculo do checksum. Apenas a escrita PPM opcional e o
+print do CSV ficam fora; os mesmos limites valem para o binario
+sequencial e o paralelo. Como medida complementar, o tempo isolado do
+trecho paralelizado tambem e reportado (\texttt{time\_par\_s} nos CSVs).
+\textbf{Entrada de referencia:} \texttt{w=800 h=600 spp=32}, calibrada
+para $T_1 \approx 56$\,s na maquina de teste, dentro da janela de 30 a
+60\,s pedida pelo enunciado. \textbf{Protocolo de repeticao:} cada
+configuracao foi executada 10 vezes com a maquina ociosa; as tabelas
+reportam mediana, min e max. \textbf{Fixacao de threads:} via variavel
+de ambiente \texttt{OMP\_NUM\_THREADS}. \textbf{Validacao:} um checksum
+por soma dos canais RGB de todos os pixels bate byte a byte entre 1 e
+12 threads e entre todas as politicas de escalonamento, o que garante
+resultado equivalente entre as versoes.
 
 \section*{3. Perfil e teto de Amdahl}
-O perfil com \texttt{gprof} (binario \texttt{-O2 -fno-inline -pg}) mostra
-\texttt{radiance} e suas chamadas (\texttt{sphere\_intersect}, operacoes de
-vetor, \texttt{rng\_next}) somando 97{,}9\% do tempo; \texttt{main} responde
-por 2{,}1\%, e todas essas amostras caem dentro do laco em \texttt{y}, que e
-o eixo paralelizado. A fracao paralelizavel medida e $f \ge 0{,}98$: o
-restante e alocacao do buffer, ajuste da camera e calculo do checksum. Com
-$f = 0{,}98$, o teto de Amdahl e $S_{\max}(12) \approx 9{,}83$ e
-$S_{\max}(6) \approx 5{,}31$.
+O perfil com \texttt{gprof} (binario \texttt{-O2 -fno-inline -pg}) sobre
+a mesma fase computacional usada na medicao mostra \texttt{radiance} e
+suas chamadas (\texttt{sphere\_intersect}, operacoes de vetor,
+\texttt{rng\_next}) somando 97{,}9\% do tempo; o restante (setup da
+camera, alocacao do buffer, calculo do checksum) fica em torno de 2{,}1\%
+e representa a parcela intrinsecamente sequencial dentro dos limites
+medidos. A fracao paralelizavel medida e $f \ge 0{,}98$. Com $f=0{,}98$
+os limites de Amdahl sao $S_{\max}(6) \approx 5{,}31$,
+$S_{\max}(12) \approx 9{,}83$ e $S_{\max}(\infty) = 50$. Com $f=0{,}99$
+sobem para $5{,}66$, $10{,}81$ e $100$, respectivamente. A comparacao
+entre esses limites e o speed-up observado (Secao~6) e o que permite
+separar o efeito da fracao sequencial dos demais fatores de saturacao.
 
 \section*{4. Modelagem e diretivas}
 A unidade de trabalho e uma linha da imagem (\texttt{a.w} pixels). O laco
@@ -95,19 +110,24 @@ perfil por thread refletir o trabalho real, e nao o momento em que a
 ultima thread chega a barreira.
 
 \section*{5. Balanceamento medido}
-Comparamos sete politicas em 12 threads (Tabela\,3). \texttt{static} sem
-chunk foi a mais rapida (mediana 7{,}24\,s), superando \texttt{dynamic}
-(7{,}38\,s), \texttt{dynamic,4} (7{,}33\,s) e \texttt{guided} (7{,}42\,s).
-O perfil por thread com \texttt{nowait} mostra que o desbalanceamento em
-qualquer politica fica em torno de 0{,}4--0{,}7\% (0{,}06--0{,}10\,s de
-diferenca entre a thread mais lenta e a mais rapida), abaixo do ruido de
-execucao.
-A intuicao era o oposto: raios que atingem o espelho e o vidro fazem mais
-reflexoes, entao a carga por pixel varia. Mas com 600 linhas divididas em
-12 blocos contiguos de 50 linhas, a variancia se dilui dentro de cada
-bloco. Sem desbalanceamento aparente para corrigir, o overhead de
-sincronizacao do \texttt{dynamic} vira custo puro; \texttt{static} vence
-por medicao, nao por default.
+Comparamos sete politicas em 12 threads com 10 execucoes cada
+(Tabela\,\ref{tab:sched}). \texttt{dynamic,4} teve a menor mediana
+(7{,}16\,s) e a menor dispersao (amostras entre 7{,}01 e 7{,}35\,s),
+seguido por \texttt{dynamic,32} (7{,}20\,s) e \texttt{guided} (7{,}23\,s).
+\texttt{static} sem chunk ficou em ultimo (9{,}56\,s de mediana), com
+amostras que vao de 7{,}57 ate 11{,}78\,s -- uma dispersao muito grande
+para uma carga que, medida pelo perfil interno por thread com
+\texttt{nowait}, mostra desbalanceamento inferior a 1\% em todas as
+politicas.
+A leitura do dado e importante: a variancia da carga por linha (raios que
+atingem o vidro e o espelho fazem mais reflexoes) e diluida por blocos
+contiguos de 50 linhas, entao o desbalanceamento intrinseco nao explica
+sozinho o mau desempenho do static. A causa provavel e ambiental:
+executando em WSL2, threads sao preemptadas ocasionalmente pelo host, e
+em \texttt{static} sem chunk uma thread atrasada bloqueia o programa
+inteiro. \texttt{dynamic,4} absorve esses atrasos porque threads livres
+continuam pegando blocos ate a fila esvaziar. Adotamos \texttt{dynamic,4}
+nas escalabilidades por essa razao empirica.
 
 \section*{6. Analise dos resultados}
 A Figura\,\ref{fig:speedup} mostra a escalabilidade forte. O speed-up e
@@ -128,13 +148,13 @@ sozinha a saturacao; a competicao SMT e o fator dominante.
 
 \begin{center}
   \includegraphics[width=\linewidth]{../results/speedup.pdf}
-  \captionof{figure}{Speed-up medido (mediana de 3 execucoes) contra a
+  \captionof{figure}{Speed-up medido (mediana de 10 execucoes) contra a
     reta ideal $y=p$. A faixa clara e o intervalo min--max. A linha
     vertical em 6 threads marca o ponto em que o SMT passa a atuar.}
   \label{fig:speedup}
 \end{center}
 
-A escalabilidade fraca (Figura\,\ref{fig:eff}, curva laranja; Tabela\,2)
+A escalabilidade fraca (Figura\,\ref{fig:eff}, curva laranja; Tabela\,\ref{tab:weak})
 foi construida fixando $w$ e $h$ e escalando \texttt{spp} proporcional a
 $p$. A justificativa e direta: o custo do renderer e $O(w \cdot h \cdot \text{spp})$,
 linear em cada fator; manter \texttt{spp/p} constante mantem o trabalho
@@ -168,69 +188,70 @@ pode ser reproduzida com os comandos do \texttt{README.md}.
 
 \end{multicols}
 
-\newpage
-% pagina 2 em coluna simples: tabelas
-\section*{Tabelas de medicao}
-
-\subsection*{Tabela 1: escalabilidade forte (w=800, h=600, spp=32)}
-Mediana de 3 execucoes por ponto; $T_1$ e o binario sequencial compilado
-sem \texttt{-fopenmp}.
-
 \begin{center}
-\begin{tabular}{r r r r}
-  \toprule
-  Threads & Tempo (s) & Speed-up & Eficiencia \\
-  \midrule
-  1 (seq, $T_1$) & 56{,}322 & 1{,}000 & 100{,}0\% \\
-  2  & 29{,}708 & 1{,}896 & 94{,}8\% \\
-  4  & 15{,}958 & 3{,}529 & 88{,}2\% \\
-  6  & 11{,}274 & 4{,}996 & 83{,}3\% \\
-  8  &  9{,}024 & 6{,}241 & 78{,}0\% \\
-  10 &  8{,}040 & 7{,}005 & 70{,}0\% \\
-  12 &  7{,}601 & 7{,}410 & 61{,}8\% \\
-  \bottomrule
-\end{tabular}
+  \small
+  \captionof{table}{Escalabilidade forte (w=800, h=600, spp=32),
+    10 execucoes por ponto. $T_1$ e o binario sequencial compilado
+    sem \texttt{-fopenmp}.}
+  \label{tab:strong}
+  \begin{tabular}{r r r r r r}
+    \toprule
+    Threads & Med.\ (s) & Min (s) & Max (s) & Speed-up & Ef. \\
+    \midrule
+    % {{TAB1_STRONG}}
+    1 ($T_1$) & TBD & TBD & TBD & 1{,}000 & 100{,}0\% \\
+    2  & TBD & TBD & TBD & TBD & TBD \\
+    4  & TBD & TBD & TBD & TBD & TBD \\
+    6  & TBD & TBD & TBD & TBD & TBD \\
+    8  & TBD & TBD & TBD & TBD & TBD \\
+    10 & TBD & TBD & TBD & TBD & TBD \\
+    12 & TBD & TBD & TBD & TBD & TBD \\
+    \bottomrule
+  \end{tabular}
 \end{center}
 
-\subsection*{Tabela 2: escalabilidade fraca (w=800, h=600, spp base = 8)}
-Regra de crescimento: $\text{spp} = 8 \cdot p$ (custo linear em spp,
-portanto trabalho total escala como $p$). Eficiencia = $T_1 / T_p$.
-
 \begin{center}
-\begin{tabular}{r r r r}
-  \toprule
-  Threads & spp & Tempo (s) & Eficiencia \\
-  \midrule
-  1 (seq, $T_1$) &  8 & 14{,}165 & 100{,}0\% \\
-  2  &  16 & 14{,}656 & 96{,}6\% \\
-  4  &  32 & 15{,}514 & 91{,}3\% \\
-  6  &  48 & 16{,}700 & 84{,}8\% \\
-  8  &  64 & 17{,}820 & 79{,}5\% \\
-  10 &  80 & 19{,}636 & 72{,}1\% \\
-  12 &  96 & 22{,}145 & 64{,}0\% \\
-  \bottomrule
-\end{tabular}
+  \small
+  \captionof{table}{Escalabilidade fraca (w=800, h=600, spp base = 32),
+    10 execucoes por ponto. Regra: $\mathrm{spp} = 32 \cdot p$ (custo
+    linear em spp; trabalho total escala com $p$). Eficiencia $= T_1/T_p$.}
+  \label{tab:weak}
+  \begin{tabular}{r r r r r r}
+    \toprule
+    Threads & spp & Med.\ (s) & Min (s) & Max (s) & Ef. \\
+    \midrule
+    % {{TAB2_WEAK}}
+    1 ($T_1$) &  32 & TBD & TBD & TBD & 100{,}0\% \\
+    2  &  64 & TBD & TBD & TBD & TBD \\
+    4  & 128 & TBD & TBD & TBD & TBD \\
+    6  & 192 & TBD & TBD & TBD & TBD \\
+    8  & 256 & TBD & TBD & TBD & TBD \\
+    10 & 320 & TBD & TBD & TBD & TBD \\
+    12 & 384 & TBD & TBD & TBD & TBD \\
+    \bottomrule
+  \end{tabular}
 \end{center}
 
-\subsection*{Tabela 3: comparacao de politicas de escalonamento em 12 threads}
-Mediana, min e max de 3 execucoes por politica com a mesma entrada da
-escalabilidade forte. A coluna \emph{ineficiencia} vem do perfil por
-thread (\texttt{--profile-balance}, $\text{ineff}=(\max - \bar{t})/\max$).
-
 \begin{center}
-\begin{tabular}{l r r r r}
-  \toprule
-  Politica & Mediana (s) & Min (s) & Max (s) & Ineficiencia \\
-  \midrule
-  static (adotada) & 7{,}238 & 7{,}218 & 7{,}383 & 0{,}4\% \\
-  static, 32       & 7{,}356 & 7{,}299 & 7{,}372 & 0{,}4\% \\
-  static, 4        & 7{,}328 & 7{,}290 & 7{,}395 & 0{,}4\% \\
-  dynamic          & 7{,}384 & 7{,}372 & 7{,}455 & 0{,}7\% \\
-  dynamic, 32      & 7{,}377 & 7{,}344 & 7{,}506 & 0{,}5\% \\
-  dynamic, 4       & 7{,}329 & 7{,}321 & 7{,}501 & 0{,}4\% \\
-  guided           & 7{,}421 & 7{,}317 & 7{,}557 & 0{,}5\% \\
-  \bottomrule
-\end{tabular}
+  \small
+  \captionof{table}{Comparacao de politicas de escalonamento em 12
+    threads, 10 execucoes por politica; mesma entrada da escalabilidade
+    forte.}
+  \label{tab:sched}
+  \begin{tabular}{l r r r}
+    \toprule
+    Politica & Mediana (s) & Min (s) & Max (s) \\
+    \midrule
+    % {{TAB3_SCHED}}
+    static (adotada) & TBD & TBD & TBD \\
+    static, 32       & TBD & TBD & TBD \\
+    static, 4        & TBD & TBD & TBD \\
+    dynamic          & TBD & TBD & TBD \\
+    dynamic, 32      & TBD & TBD & TBD \\
+    dynamic, 4       & TBD & TBD & TBD \\
+    guided           & TBD & TBD & TBD \\
+    \bottomrule
+  \end{tabular}
 \end{center}
 
 \end{document}

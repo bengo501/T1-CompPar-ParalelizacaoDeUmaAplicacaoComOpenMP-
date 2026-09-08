@@ -13,12 +13,12 @@ W=${W:-800}
 H=${H:-600}
 SPP=${SPP:-32}
 THREADS=${THREADS:-12}
-REPS=${REPS:-3}
+REPS=${REPS:-10}
 
 OUT_TIMES=results/sched.csv
 OUT_BAL=results/balance.csv
 mkdir -p results
-echo "version,label,threads,schedule,w,h,spp,time_s,checksum" > "$OUT_TIMES"
+echo "version,label,threads,schedule,w,h,spp,time_s,time_par_s,checksum" > "$OUT_TIMES"
 echo "schedule,thread,time_s,iters" > "$OUT_BAL"
 
 policies=("static" "static,32" "static,4" "dynamic" "dynamic,32" "dynamic,4" "guided")

@@ -1,2 +1,2 @@
-version,label,threads,schedule,w,h,spp,time_s,checksum
-csv,prof,1,default,320,240,8,17.344039,44213.977716
+version,label,threads,schedule,w,h,spp,time_s,time_par_s,checksum
+csv,prof,1,default,320,240,8,17.785815,17.785640,44213.977716

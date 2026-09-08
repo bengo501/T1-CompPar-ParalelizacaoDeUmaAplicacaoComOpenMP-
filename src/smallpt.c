@@ -280,6 +280,21 @@ int main(int argc, char** argv) {
     int threads_used = 1;
 #endif
 
+    // perfil por thread com padding para evitar false sharing quando threads
+    // adjacentes gravam contadores adjacentes. este vetor e usado apenas para
+    // a instrumentacao de balanceamento e nao entra na fase computacional
+    // medida (por isso alocado antes de t0).
+    typedef struct { double time; long iters; char pad[64 - sizeof(double) - sizeof(long)]; } ThreadStat;
+    ThreadStat* stat = (ThreadStat*)calloc((size_t)threads_used, sizeof(ThreadStat));
+    if (!stat) { fprintf(stderr, "erro: sem memoria (stat)\n"); return 1; }
+
+    // t0 abre a fase computacional completa: setup da camera, alocacao do
+    // buffer, laco paralelo e checksum. so a escrita PPM e o print do csv
+    // ficam fora, conforme o enunciado permite (I/O). t_par e t_par_end
+    // capturam o tempo isolado do trecho paralelizado, que e reportado como
+    // medida complementar.
+    double t0 = now_s();
+
     // camera: mesma do smallpt original, com aspect adaptado a wxh.
     Vec cam_o = v_(50, 52, 295.6);
     Vec cam_d = v_norm(v_(0, -0.042612, -1));
@@ -289,13 +304,7 @@ int main(int argc, char** argv) {
     Vec* c = (Vec*)calloc((size_t)a.w * (size_t)a.h, sizeof(Vec));
     if (!c) { fprintf(stderr, "erro: sem memoria\n"); return 1; }
 
-    // perfil por thread com padding para evitar false sharing quando threads
-    // adjacentes gravam contadores adjacentes.
-    typedef struct { double time; long iters; char pad[64 - sizeof(double) - sizeof(long)]; } ThreadStat;
-    ThreadStat* stat = (ThreadStat*)calloc((size_t)threads_used, sizeof(ThreadStat));
-    if (!stat) { fprintf(stderr, "erro: sem memoria (stat)\n"); return 1; }
-
-    double t0 = now_s();
+    double t_par = now_s();
 
 #ifdef _OPENMP
     // laco externo sobre linhas y da imagem: cada linha e independente
@@ -377,16 +386,22 @@ int main(int argc, char** argv) {
             c[(size_t)y * a.w + x] = r_pixel;
         }
     }
-    stat[0].time  = now_s() - t0;
+    stat[0].time  = now_s() - t_par;
     stat[0].iters = (long)a.w * (long)a.h;
 #endif
 
-    double t1 = now_s();
-    double elapsed = t1 - t0;
+    double t_par_end = now_s();
+    double t_par_elapsed = t_par_end - t_par;
 
     double checksum = 0.0;
     size_t npix = (size_t)a.w * (size_t)a.h;
     for (size_t i = 0; i < npix; ++i) checksum += c[i].x + c[i].y + c[i].z;
+
+    // t1 fecha a fase computacional completa. e este o tempo usado para
+    // calcular speed-up e eficiencia; t_par_elapsed vai como coluna
+    // complementar no csv, para diagnostico.
+    double t1 = now_s();
+    double elapsed = t1 - t0;
 
     // schedule pode conter virgula (ex: "static,32"); troca-se por '_' na
     // impressao para nao quebrar o csv.
@@ -398,11 +413,15 @@ int main(int argc, char** argv) {
         for (size_t i = 0; i < n; ++i) sched_out[i] = (src[i] == ',') ? '_' : src[i];
         sched_out[n] = '\0';
     }
-    printf("version,label,threads,schedule,w,h,spp,time_s,checksum\n");
-    printf("csv,%s,%d,%s,%d,%d,%d,%.6f,%.6f\n",
+    // csv: time_s eh o tempo da fase computacional completa (usado no
+    // speed-up e na eficiencia); time_par_s eh o tempo isolado do trecho
+    // paralelizado, reportado como medida complementar conforme o
+    // enunciado.
+    printf("version,label,threads,schedule,w,h,spp,time_s,time_par_s,checksum\n");
+    printf("csv,%s,%d,%s,%d,%d,%d,%.6f,%.6f,%.6f\n",
            a.version_label, threads_used,
            sched_out,
-           a.w, a.h, a.spp, elapsed, checksum);
+           a.w, a.h, a.spp, elapsed, t_par_elapsed, checksum);
 
     if (a.profile_balance) {
         fprintf(stderr, "# thread,time_s,iters\n");

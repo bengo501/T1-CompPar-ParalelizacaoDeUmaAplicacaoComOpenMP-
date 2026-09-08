@@ -15,12 +15,15 @@ BIN_OMP=./bin/smallpt_omp
 
 W=${W:-800}
 H=${H:-600}
-SPP_BASE=${SPP_BASE:-8}
-REPS=${REPS:-3}
+# base = mesma entrada da escalabilidade forte (spp=32), como pede o
+# enunciado corrigido. o trabalho por thread e mantido constante escalando
+# spp linearmente com p, ja que o custo do renderer e O(w*h*spp).
+SPP_BASE=${SPP_BASE:-32}
+REPS=${REPS:-10}
 
 OUT=results/weak.csv
 mkdir -p results
-echo "version,label,threads,schedule,w,h,spp,time_s,checksum" > "$OUT"
+echo "version,label,threads,schedule,w,h,spp,time_s,time_par_s,checksum" > "$OUT"
 
 echo "--- referencia sequencial (T1, spp=$SPP_BASE) ---"
 for r in $(seq 1 "$REPS"); do
@@ -33,8 +36,9 @@ for t in 2 4 6 8 10 12; do
     echo "--- paralelo com $t threads, spp=$spp ---"
     for r in $(seq 1 "$REPS"); do
         echo ">>> omp t=$t rep $r"
+        # politica escolhida por medicao: dynamic,4 (ver results/balanceamento.md).
         OMP_NUM_THREADS="$t" "$BIN_OMP" -w "$W" -h "$H" -s "$spp" \
-            --schedule static --label "omp_t${t}" 2>/dev/null | tail -1 >> "$OUT"
+            --schedule "dynamic,4" --label "omp_t${t}" 2>/dev/null | tail -1 >> "$OUT"
     done
 done
 

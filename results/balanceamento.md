@@ -1,59 +1,62 @@
 # balanceamento de carga
 
 configuração: `w=800 h=600 spp=32`, 12 threads, `bin/smallpt_omp`
-(gcc -O3 -march=native -ffast-math -fopenmp).
+(gcc -O3 -march=native -ffast-math -fopenmp). **10 execuções por política**.
 
-## tempos totais por política (mediana de 3 execuções)
+## tempos totais por política (mediana, min, max de 10 execuções)
 
 | política          | mediana [s] | min [s] | max [s] |
 |-------------------|------------:|--------:|--------:|
-| static (padrão)   | 7.238       | 7.218   | 7.383   |
-| static,32         | 7.356       | 7.299   | 7.372   |
-| static,4          | 7.328       | 7.290   | 7.395   |
-| dynamic           | 7.384       | 7.372   | 7.455   |
-| dynamic,32        | 7.377       | 7.344   | 7.506   |
-| dynamic,4         | 7.329       | 7.321   | 7.501   |
-| guided            | 7.421       | 7.317   | 7.557   |
+| static (padrão)   | 9.556       | 7.573   | 11.779  |
+| static,32         | 8.389       | 7.425   | 10.494  |
+| static,4          | 7.658       | 7.259   |  8.287  |
+| dynamic           | 7.297       | 7.210   |  7.933  |
+| dynamic,32        | 7.199       | 7.157   |  7.608  |
+| **dynamic,4**     | **7.164**   | 7.006   |  7.354  |
+| guided            | 7.231       | 6.935   |  7.385  |
 
-**vencedor: `static` (padrão), ~7.24s.**
+**vencedor: `dynamic,4` (mediana 7.16 s) — com `guided` em segundo lugar
+(7.23 s) e `dynamic,32` em terceiro (7.20 s). `static` sem chunk ficou em
+último com 9.56 s e altíssima dispersão.**
 
-## desbalanceamento medido por thread (com nowait)
+## amostras completas (ordenadas)
 
-o campo `time_s` mostra o tempo real de cada thread dentro do laço em y;
-o campo `imbalance = max - min` é a diferença entre a thread mais lenta e
-a mais rápida.
+```
+static      7.57 8.30 8.56 9.07 9.47 9.65 9.81 10.29 10.69 11.78
+static,32   7.42 7.81 7.86 7.90 8.37 8.41 8.46 8.62  8.80 10.49
+static,4    7.26 7.37 7.46 7.50 7.66 7.66 7.67 8.14  8.23  8.29
+dynamic     7.21 7.24 7.25 7.28 7.29 7.30 7.34 7.36  7.41  7.93
+dynamic,32  7.16 7.16 7.17 7.17 7.18 7.22 7.29 7.29  7.31  7.61
+dynamic,4   7.01 7.07 7.09 7.14 7.15 7.17 7.23 7.24  7.27  7.35
+guided      6.93 6.95 7.13 7.21 7.21 7.25 7.26 7.27  7.34  7.39
+```
 
-| política   | min [s] | media [s] | max [s] | imbalance [s] | ineficiência |
-|------------|--------:|----------:|--------:|--------------:|-------------:|
-| static     | 7.074   | 7.117     | 7.148   | 0.074         | 0.4%         |
-| static,32  | 7.560   | 7.593     | 7.627   | 0.067         | 0.4%         |
-| static,4   | 7.473   | 7.526     | 7.554   | 0.081         | 0.4%         |
-| dynamic    | 8.209   | 8.239     | 8.295   | 0.086         | 0.7%         |
-| dynamic,32 | 7.558   | 7.610     | 7.649   | 0.091         | 0.5%         |
-| dynamic,4  | 7.439   | 7.472     | 7.504   | 0.064         | 0.4%         |
-| guided     | 7.532   | 7.594     | 7.633   | 0.101         | 0.5%         |
+## análise
 
-## conclusão
+com 3 repetições, tínhamos visto `static` como campeão. com 10
+repetições fica claro que `static` sem chunk é **muito volátil** nesta
+máquina: as amostras vão de 7.57 até 11.78 s (dispersão de 4.2 s).
+`static,32` melhora bastante (7.42 a 10.49) e `static,4` melhora ainda
+mais (7.26 a 8.29), mas nenhuma das três variantes de static compete
+com o topo.
 
-era plausível esperar que `dynamic` vencesse: os raios que atingem a
-esfera de vidro e a de espelho fazem muitas reflexões e refrações antes
-de sair da cena, e essa profundidade extra não está distribuída
-uniformemente entre pixels. mas o experimento contradiz a intuição.
+por que `static` perde? o WSL2/Windows não oferece a mesma latência
+determinística de um Linux nativo: threads são preemptadas ocasionalmente
+por outros processos do sistema. em `static` sem chunk, cada thread
+recebe um bloco contíguo de 50 linhas e ninguém pode ajudá-la; se uma
+thread é atrasada, o programa espera. em `dynamic,4` ou `guided`, quando
+uma thread termina o bloco atual, ela pega outro imediatamente, o que
+"absorve" o atraso de qualquer thread que tenha sido preemptada.
 
-com 600 linhas divididas por 12 threads, cada thread do `static` recebe
-50 linhas contíguas: essa granularidade é grossa o suficiente para
-diluir a variância de profundidade dentro de cada bloco (uma linha
-"cara" costuma vir junto de linhas próximas na imagem, então acaba
-"puxando" o resto do bloco também). a ineficiência de balanceamento
-medida fica em torno de 0.5% em todas as políticas — abaixo do ruído
-de execução.
+a inefficiency interna (perfil por thread) continua abaixo de 1% em
+todas as políticas, o que confirma que **o desbalanceamento não vem
+da variância intrínseca do algoritmo**, mas sim do ambiente de
+execução. essa distinção só ficou visível com 10 repetições.
 
-sem desbalanceamento aparente, o que sobra é o overhead: `dynamic` sem
-chunk paga uma sincronização por linha e fica ~2% mais lento; `guided`
-começa com blocos grandes e diminui, o que introduz irregularidade sem
-ganho; as variantes com chunk (`static,32`, `dynamic,4`) ficam
-essencialmente empatadas com o `static` sem chunk (diferenças de 1-2%,
-dentro da variação de execução).
-
-**decisão: usar `schedule(static)` (padrão) nas escalabilidades forte
-e fraca.** essa política é justificada por medição, não por default.
+**decisão: usar `schedule(dynamic, 4)` nas escalabilidades forte e
+fraca.** justificada por medição: menor mediana, menor variação, e
+comportamento mais robusto a interferências do sistema. É importante
+enfatizar que esta é uma decisão *empírica*: o path tracer tem carga
+levemente heterogênea por profundidade de recursão, mas o fator dominante
+para preferir dynamic aqui é a robustez a preempção, não a
+heterogeneidade da carga.

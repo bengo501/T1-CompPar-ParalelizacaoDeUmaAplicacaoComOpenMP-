@@ -13,11 +13,11 @@ BIN_OMP=./bin/smallpt_omp
 W=${W:-800}
 H=${H:-600}
 SPP=${SPP:-32}
-REPS=${REPS:-3}
+REPS=${REPS:-10}
 
 OUT=results/strong.csv
 mkdir -p results
-echo "version,label,threads,schedule,w,h,spp,time_s,checksum" > "$OUT"
+echo "version,label,threads,schedule,w,h,spp,time_s,time_par_s,checksum" > "$OUT"
 
 echo "--- referencia sequencial (T1) ---"
 for r in $(seq 1 "$REPS"); do
@@ -29,8 +29,9 @@ for t in 2 4 6 8 10 12; do
     echo "--- paralelo com $t threads ---"
     for r in $(seq 1 "$REPS"); do
         echo ">>> omp t=$t rep $r"
+        # politica escolhida por medicao: dynamic,4 (ver results/balanceamento.md).
         OMP_NUM_THREADS="$t" "$BIN_OMP" -w "$W" -h "$H" -s "$SPP" \
-            --schedule static --label "omp_t${t}" 2>/dev/null | tail -1 >> "$OUT"
+            --schedule "dynamic,4" --label "omp_t${t}" 2>/dev/null | tail -1 >> "$OUT"
     done
 done
 

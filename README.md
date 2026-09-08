@@ -26,27 +26,45 @@ o binario paralelo acrescenta apenas `-fopenmp`.
 ### 2. medir
 
 ```
+bash scripts/run_all.sh          # dispara tudo em sequencia (~90 min)
+
+# ou individualmente:
 bash scripts/profile.sh          # perfil com gprof (~30s)
-bash scripts/run_sched.sh        # 7 politicas de scheduling em 12 threads
-bash scripts/run_strong.sh       # escalabilidade forte, 1..12 threads
-bash scripts/run_weak.sh         # escalabilidade fraca, 1..12 threads
+bash scripts/run_sched.sh        # 7 politicas de scheduling em 12 threads (10 reps)
+bash scripts/run_strong.sh       # escalabilidade forte, 1..12 threads (10 reps)
+bash scripts/run_weak.sh         # escalabilidade fraca, 1..12 threads (10 reps)
 bash scripts/summarize_balance.sh
 ```
 
 parametros ajustaveis pelas variaveis `W`, `H`, `SPP`, `REPS`, `THREADS`,
 `SPP_BASE`. defaults reproduzem exatamente a Tabela do relatorio:
-- forte: `W=800 H=600 SPP=32`
-- fraca: `W=800 H=600 SPP_BASE=8`, spp escala como `SPP_BASE*p`
-- schedule: `W=800 H=600 SPP=32` em 12 threads.
+- forte: `W=800 H=600 SPP=32 REPS=10`
+- fraca: `W=800 H=600 SPP_BASE=32 REPS=10`, spp escala como `SPP_BASE*p`
+  (mesma entrada de referencia da forte, como pede o enunciado)
+- schedule: `W=800 H=600 SPP=32 THREADS=12 REPS=10`.
 
 todas as execucoes usam `OMP_NUM_THREADS` (variavel de ambiente), nao
 `omp_set_num_threads`, e escrevem `results/*.csv` com uma linha por
 execucao no formato:
 ```
-version,label,threads,schedule,w,h,spp,time_s,checksum
+version,label,threads,schedule,w,h,spp,time_s,time_par_s,checksum
 ```
+onde `time_s` e o tempo da fase computacional completa (setup, alocacao,
+laco de renderizacao e checksum) e `time_par_s` e o tempo isolado do
+trecho paralelizado, reportado como medida complementar. as metricas
+de speed-up e eficiencia sao calculadas a partir de `time_s`.
+
 o `checksum` bate em todas as contagens de threads e em todas as
 politicas de scheduling, o que valida a paralelizacao.
+
+**tempos brutos de todas as execucoes** ficam em `results/strong.csv`,
+`results/weak.csv` e `results/sched.csv` (uma linha por execucao,
+sem agregacao); a agregacao para o relatorio (mediana, min, max) e
+feita por `scripts/plot.py` e `scripts/report_tables.py`.
+
+o protocolo padrao usa **10 repeticoes por configuracao** (variavel
+`REPS`), conforme pede o enunciado. `scripts/run_all.sh` dispara todas
+as baterias em sequencia.
 
 ### 3. graficos
 
