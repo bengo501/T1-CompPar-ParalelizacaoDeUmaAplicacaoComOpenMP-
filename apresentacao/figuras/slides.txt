@@ -1,0 +1,91 @@
+textos curtos para falar / colar
+
+smallpt
+path tracer mínimo do kevin beason (2008). o nosso é a mesma cena e o mesmo algoritmo, reescritos em c11. não é um motor de jogos: é um integrador de luz. para cada pixel dispara muitos raios, segue ricochetes até uma luz (ou até a roleta russa matar o caminho) e acumula cor. a entrada é -w -h -s; o custo cresce com w · h · spp.
+
+path tracing
+em vez de “acender a lâmpada e pintar a parede”, o raio sai da câmera, atravessa um pixel, acerta a cena e rebate. em superfície difusa o próximo rumo é aleatório; no espelho é reflexão; no vidro é reflexão ou refração. a cor do pixel é a luz que esse caminho coletou. um caminho só é uma amostra ruim; milhares de caminhos no mesmo pixel convergem para a imagem certa.
+
+monte carlo
+técnica de estimar um integral difícil com média de amostras aleatórias. aqui o integral é a equação de transporte de luz. spp é quantas amostras por subpixel (e há 2×2 subpixels, então 4·spp por pixel). mais amostras → menos ruído, tempo linear. por isso a escalabilidade fraca cresce spp = 32 · p: o trabalho por thread fica constante.
+
+cornell box
+sala de teste clássica (cornell, 1984): paredes vermelha e azul, teto com luz de área, chão e fundo claros. no smallpt as “paredes” são esferas gigantes; no chão há um espelho e um vidro. serve para ver iluminação indireta, cor sangrando nas paredes, caústica sob o vidro e reflexão da sala no cromado — tudo difícil de trapacear com um shader simples.
+
+teto de amdahl
+se uma fração f do tempo é paralelizada e 1−f permanece serial, o speed-up com p threads não passa de
+S(p) = 1 / ((1−f) + f/p).
+com p → ∞, S∞ = 1/(1−f).
+o gprof deu f ≈ 0,982, então S_max(6) ≈ 5,51, S_max(12) ≈ 10 e S∞ ≈ 55,6. medimos 7,44 em 12 threads: abaixo de 10. a saturação não é a fração serial; é smt (e preempção do wsl2).
+
+os slides dos prints — o que cada um faz, e o que dizer
+
+slide 1 — o que é o smallpt
+hoje é só texto. a turma ainda não viu a cena. coloque o render (19 ou 20) à esquerda e deixe 3 linhas: path tracer, cornell box, custo O(w·h·spp). o card escuro já fecha o “por que este programa”: T1 ≈ 54 s, um laço por linha, não trivial. fale uns 40 s e mostre o ruído: “isso é amostragem, não um png da internet”.
+
+slide 2 — perfil e amdahl
+é o argumento de onde paralelizar. radiance e filhas = 98,2%; o main é 1,75%. daí o f e os três tetos. o gráfico de barras está com o eixo vertical 1.0 … 10.0 em vez dos nomes (sphere_intersect, radiance, v_dot, …). no print parece ranking, não funções. troque o eixo pelas funções (a figura 13_gprof.png já vem nomeada) senão a pergunta “o que é a barra 31%?” trava o grupo.
+
+slide 3 — unidade de trabalho
+uma linha da imagem = uma tarefa. quatro ideias: laço em y (600 iterações), escrita só em c[y·w+x] (sem atomic/reduction), rng privado com semente da linha (checksum igual em 1 e 12 threads), validação. a figura 11_eixo_paralelismo.png cabe aqui: mostra as faixas. frase de ouro: “não há corrida porque cada thread escreve numa faixa disjunta”.
+
+slide 4 — diretivas
+é o slide de “sabemos o código”. não recite o pragma: justifique cada cláusula. default(none) força escopo; shared só o que é mesmo compartilhado; schedule(runtime) deixa comparar políticas sem recompilar; nowait faz o perfil por thread ser honesto. se perguntarem “por que não reduction?”: não há acumulador no laço quente; o checksum é depois.
+
+slide 5 — as 7 políticas
+melhor slide empírico. dynamic,4 ganha mediana e dispersão. static sem chunk é o pior e o mais instável (7,57–11,78 s). o perfil interno desbalanceia < 1%, então o vilão não é o espelho vs. o fundo: é o wsl2 preemptar uma thread no static e travar o bloco. dynamic,4 redistribui. diga isso; não diga só “dynamic foi mais rápido”.
+
+slide 6 — escalabilidade forte
+a história está certa: até 6 threads acompanha amdahl (4,93 vs teto 5,51); depois o smt entra e o ganho morre (7,44 em 12, eficiência 62%). o gráfico do print está errado no eixo x: vai de 1 a 7, não 1, 2, 4, 6, 8, 10, 12. o ponto do smt (6 núcleos) não cai no lugar certo. use 14_speedup.png, que já tem a linha em 6 threads. sem isso a frase “quebra no smt” não bate com o desenho.
+
+slide 7 — escalabilidade fraca
+regra spp = 32 · p (trabalho linear em spp). até 4 threads o tempo quase não sobe; em 12 vai a 124 s (eficiência 44,8%). a fraca cai mais que a forte depois do smt porque cada núcleo recebe duas cargas completas. de novo: o eixo do print é 1–7, não o número de threads. troque por 15_eficiencia.png.
+
+slide 8 — conclusão
+três números e uma causa. 54 s → 7,3 s; 82% nos 6 físicos; política medida. feche com: a saturação não é amdahl (S_max(12) ≈ 10, medimos 7,44); é topologia (smt) + preempção. checksum idêntico = correção. dez minutos cabem se o slide 1 tiver imagem e os gráficos 6 e 7 tiverem o eixo certo.
+
+-w -h -s são os três parâmetros que definem o tamanho do problema.
+
+-w = largura da imagem, em pixels
+-h = altura da imagem, em pixels
+-s = spp = amostras por subpixel
+a entrada de referência do trabalho é -w 800 -h 600 -s 32. isso gera uma imagem 800×600, com 32 amostras em cada um dos 4 subpixels (2×2), portanto 128 caminhos por pixel.
+
+w · h · spp é o volume de trabalho. o programa tem laços aninhados:
+
+para cada uma das h linhas
+  para cada um dos w pixels
+    para cada um dos 4 subpixels
+      para cada uma das spp amostras
+        dispara um raio e calcula radiance()
+o número de raios primários é h × w × 4 × spp. como o 4 é constante, o custo cresce linearmente com w · h · spp.
+
+exemplo: dobrar só o spp (32 → 64) dobra o tempo, com a mesma resolução. por isso a escalabilidade fraca não aumenta w e h: aumenta spp = 32 · p, para o trabalho total crescer junto com o número de threads e o trabalho por thread ficar aproximadamente constante.
+
+S(p) = 1 / ((1−f) + f/p) é a lei de amdahl.
+
+imagine o tempo sequencial T1 partido em dois pedaços:
+
+f = fração que você consegue paralelizar (aqui ≈ 0,982, o laço em y)
+1−f = fração que sempre fica serial (aqui ≈ 0,018, setup + checksum)
+com p threads:
+
+a parte serial continua 1−f (não encolhe)
+a parte paralela vira f/p (divide pelas threads)
+o speed-up máximo possível é o tempo original (1) dividido pelo tempo que sobra:
+
+S(p) = 1 / ((1−f) + f/p)
+
+números do trabalho:
+
+6 threads: S(6) = 1 / (0,018 + 0,982/6) ≈ 5,51
+12 threads: S(12) = 1 / (0,018 + 0,982/12) ≈ 10,00
+mesmo com paralelismo perfeito nessa fração, 12 threads não passam de ~10×. medimos 7,44×, então o teto de amdahl não explica a saturação sozinho.
+
+p → ∞, S∞ = 1/(1−f) é o mesmo teto quando o número de threads explode.
+
+f/p vai para zero: a parte paralela fica grátis. sobra só a parte serial 1−f. então
+
+S∞ = 1 / (1−f) ≈ 1 / 0,018 ≈ 55,6
+
+tradução: mesmo com infinitas threads, o programa não fica mais que ~56 vezes mais rápido, porque aqueles 1,8% seriais continuam lá. na prática isso é irrelevante neste t1: o speed-up já quebra bem antes, no smt (depois de 6 núcleos), longe dos 55,6.
