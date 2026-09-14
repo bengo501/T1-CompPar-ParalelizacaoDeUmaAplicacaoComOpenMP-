@@ -1,7 +1,8 @@
-// path tracer estilo smallpt (kevin beason, 2008), reescrito em c para o t1
-// de computacao paralela. um unico arquivo serve para o binario sequencial
-// (compilado sem -fopenmp) e para o paralelo (com -fopenmp). o laco quente
-// e o das linhas da imagem; cada pixel e independente, entao nao ha condicao
+// path tracer estilo smallpt (kevin beason, 2008), reescrito em c11
+// (padrao iso da linguagem c de 2011) para o t1 de computacao paralela.
+// um unico arquivo serve para o binario sequencial (compilado sem
+// -fopenmp) e para o paralelo (com -fopenmp). o laco quente e o das
+// linhas da imagem; cada pixel e independente, entao nao ha condicao
 // de corrida se o gerador de numeros aleatorios tiver estado por-thread.
 
 #define _POSIX_C_SOURCE 200809L

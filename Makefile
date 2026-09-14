@@ -1,7 +1,8 @@
 # makefile do t1 - path tracer smallpt para computacao paralela
-# tres alvos com flags identicas de otimizacao. o binario sequencial
-# nao usa -fopenmp (esse e o T1 de referencia); o paralelo usa -fopenmp;
-# o de profile usa -pg para o gprof e -O2 para evitar demais inlining.
+# tres alvos com flags identicas de otimizacao. -std=c11 pede ao gcc o
+# padrao iso c de 2011. o binario sequencial nao usa -fopenmp (esse e o
+# T1 de referencia); o paralelo usa -fopenmp; o de profile usa -pg para
+# o gprof e -O2 para evitar demais inlining.
 
 CC       ?= gcc
 STD       = -std=c11
