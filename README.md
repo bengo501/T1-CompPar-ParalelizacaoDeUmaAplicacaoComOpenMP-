@@ -10,9 +10,11 @@ o laco paralelizado e o das linhas da imagem.
 
 - cpu: amd ryzen 5 3600 (6 nucleos fisicos, 12 threads), 3.6 ghz, l3 32 mb, 32 gb ram
 - so: ubuntu 22.04 em wsl2 sobre windows 11
-- gcc 11.4.0. flags: `-O3 -march=native -ffast-math -std=c11` (c11 = padrao iso c de 2011; a versao paralela acrescenta `-fopenmp`)
+- gcc 11.4.0. flags: `-O3 -march=native -ffast-math -std=c11`
+- o sequencial liga `-fopenmp -DSEQ_ONLY` so para o timer `omp_get_wtime` (sem regiao paralela)
+- o paralelo acrescenta `-fopenmp` de verdade
 - entrada de referencia: `-w 800 -h 600 -s 32`
-- threads: `OMP_NUM_THREADS` (nao `omp_set_num_threads`)
+- threads: `OMP_NUM_THREADS`
 
 ## reproduzir
 
@@ -20,10 +22,10 @@ o laco paralelizado e o das linhas da imagem.
 make all
 bash scripts/run_all.sh
 python scripts/plot.py
-cd report && pdflatex relatorio.tex
+cd relatorio && pdflatex relatorio.tex
 ```
 
-`run_all.sh` roda perfil, 7 politicas de scheduling, escalabilidade forte e fraca (10 repeticoes por ponto).
+`run_all.sh` roda perfil, 7 politicas, escalabilidade forte e fraca (10 repeticoes por ponto).
 
 tempos brutos: `results/strong.csv`, `results/weak.csv`, `results/sched.csv`.
 speed-up e eficiencia usam a coluna `time_s` (fase computacional completa).

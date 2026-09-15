@@ -1,8 +1,8 @@
 # makefile do t1 - path tracer smallpt para computacao paralela
 # tres alvos com flags identicas de otimizacao. -std=c11 pede ao gcc o
-# padrao iso c de 2011. o binario sequencial nao usa -fopenmp (esse e o
-# T1 de referencia); o paralelo usa -fopenmp; o de profile usa -pg para
-# o gprof e -O2 para evitar demais inlining.
+# padrao iso c de 2011. seq e prof ligam -fopenmp so para omp_get_wtime
+# (-DSEQ_ONLY, sem regiao paralela). o paralelo usa -fopenmp de verdade.
+# o de profile usa -pg para o gprof e -O2 para evitar demais inlining.
 
 CC       ?= gcc
 STD       = -std=c11
@@ -30,7 +30,7 @@ dirs:
 	@mkdir -p $(BIN_DIR) results
 
 $(BIN_SEQ): $(SRC)
-	$(CC) $(STD) $(WARN) $(OPT) $(INC) $< -o $@ $(LIBS)
+	$(CC) $(STD) $(WARN) $(OPT) -fopenmp -DSEQ_ONLY $(INC) $< -o $@ $(LIBS)
 
 $(BIN_OMP): $(SRC)
 	$(CC) $(STD) $(WARN) $(OPT) -fopenmp $(INC) $< -o $@ $(LIBS)
@@ -40,7 +40,7 @@ $(BIN_OMP): $(SRC)
 # perfil deixar de ser representativo. -DPROFILE remove os inline
 # manuais das operacoes vetoriais.
 $(BIN_PROF): $(SRC)
-	$(CC) $(STD) $(WARN) -O2 -fno-inline -fno-inline-functions -fno-inline-small-functions -pg -DPROFILE $(INC) $< -o $@ $(LIBS)
+	$(CC) $(STD) $(WARN) -O2 -fno-inline -fno-inline-functions -fno-inline-small-functions -pg -DPROFILE -fopenmp -DSEQ_ONLY $(INC) $< -o $@ $(LIBS)
 
 clean:
-	rm -rf $(BIN_DIR) results/*.csv results/*.txt gmon.out
+	rm -rf $(BIN_DIR) gmon.out

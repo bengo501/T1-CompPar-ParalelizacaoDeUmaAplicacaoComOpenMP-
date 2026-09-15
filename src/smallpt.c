@@ -1,7 +1,8 @@
 // path tracer estilo smallpt (kevin beason, 2008), reescrito em c11
 // (padrao iso da linguagem c de 2011) para o t1 de computacao paralela.
-// um unico arquivo serve para o binario sequencial (compilado sem
-// -fopenmp) e para o paralelo (com -fopenmp). o laco quente e o das
+// um unico arquivo serve para o binario sequencial (-fopenmp -DSEQ_ONLY:
+// timer omp_get_wtime, sem regiao paralela) e para o paralelo (-fopenmp).
+// o laco quente e o das
 // linhas da imagem; cada pixel e independente, entao nao ha condicao
 // de corrida se o gerador de numeros aleatorios tiver estado por-thread.
 
@@ -11,18 +12,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <time.h>
 
-#ifdef _OPENMP
-  #include <omp.h>
-  static inline double now_s(void) { return omp_get_wtime(); }
-#else
-  static inline double now_s(void) {
-      struct timespec t;
-      clock_gettime(CLOCK_MONOTONIC, &t);
-      return (double)t.tv_sec + (double)t.tv_nsec * 1e-9;
-  }
-#endif
+// as duas versoes ligam openmp para o relogio (omp_get_wtime), como o
+// enunciado pede. SEQ_ONLY (binario sequencial e o de profile) nao abre
+// regiao paralela: so usa o timer.
+#include <omp.h>
+static inline double now_s(void) { return omp_get_wtime(); }
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -271,7 +266,7 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-#ifdef _OPENMP
+#if defined(_OPENMP) && !defined(SEQ_ONLY)
     if (a.threads > 0) omp_set_num_threads(a.threads);
     int threads_used = 0;
     int nprocs = omp_get_num_procs();
@@ -280,7 +275,7 @@ int main(int argc, char** argv) {
     if (a.sched) setenv("OMP_SCHEDULE", a.sched, 1);
 #else
     int threads_used = 1;
-    int nprocs = 1;
+    int nprocs = omp_get_num_procs();
 #endif
     fprintf(stderr, "nprocs=%d threads_used=%d\n", nprocs, threads_used);
 
@@ -310,7 +305,7 @@ int main(int argc, char** argv) {
 
     double t_par = now_s();
 
-#ifdef _OPENMP
+#if defined(_OPENMP) && !defined(SEQ_ONLY)
     // laco externo sobre linhas y da imagem: cada linha e independente
     // porque escreve em uma faixa disjunta do buffer c. schedule(runtime)
     // deixa a politica ser escolhida por OMP_SCHEDULE, o que permite comparar
